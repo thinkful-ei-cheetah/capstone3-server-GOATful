@@ -3,8 +3,8 @@ CREATE TABLE users (
   email TEXT NOT NULL UNIQUE,
   full_name TEXT NOT NULL,
   avatar TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE videos (
@@ -18,8 +18,8 @@ CREATE TABLE videos (
   youtube_url TEXT,
   tags TEXT [],
   user_id INTEGER REFERENCES users(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE TABLE previews (
@@ -29,6 +29,6 @@ CREATE TABLE previews (
   title TEXT NOT NULL,
   description TEXT,
   video_id INTEGER REFERENCES videos(id) ON DELETE CASCADE NOT NULL,
-  created_at TIMESTAMP NOT NULL DEFAULT now(),
-  updated_at TIMESTAMP NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
