@@ -43,7 +43,7 @@ function errorHandler(error, req, res, next) {
     console.error(error);
   }
 
-  res.status(code).json({ message: error.message });
+  return res.status(code).json({ message: error.message });
 }
 
 module.exports = app;

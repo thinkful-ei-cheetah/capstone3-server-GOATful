@@ -4,6 +4,8 @@ const path = require('path');
 const express = require('express');
 const jsonParser = express.json();
 const xss = require('xss')
+const Joi = require('joi')
+const videoSchema = require('./video-schema')
 const videosRouter = express.Router();
 const VideoService = require('./video-service');
 
@@ -34,15 +36,11 @@ videosRouter
   .post(jsonParser, async (req, res, next) => {
     const { title, video_length, youtube_display_name, tags } = req.body
     const user_id = 1
-    const newVideo = { title, video_length, youtube_display_name, tags, user_id }
-
-    for (const [key, value] of Object.entries(newVideo))
-      if (value == null) 
-        return res.status(400).json({
-          error: { message: `Missing '${key}' in request body` }
-        })
-   
+    let newVideo = { title, video_length, youtube_display_name, tags, user_id }
+    
     try {
+      let validation = await Joi.validate(newVideo, videoSchema)
+      newVideo = validation
       const newVideoPost = await VideoService.insertVideo(req.app.get('db'), newVideo)
       const serializedVideo = await serializeVideo(newVideoPost)
       return res
@@ -50,7 +48,8 @@ videosRouter
               .location(path.posix.join(req.originalUrl, `/${serializedVideo.id}`))
               .json(serializedVideo)
     } catch(err) {
-      next({ status: 500, message: err.message })
+      console.log(err)
+      next({ status: 500, message: err.details[0].message || err.message })
     }
   })
 

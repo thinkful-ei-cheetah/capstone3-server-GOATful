@@ -57,126 +57,126 @@ describe('Videos Endpoints', function() {
           });
       });
     });
-    describe('POST /api/videos', () => {
-      const testUsers = helpers.makeUsersArray()
-      beforeEach('insert users', () => {
-        helpers.seedUsers(db, testUsers)
-      })
-      it('creates a video, responding with 201 and the new video', () => {
-        const newVideo = {
-          title: 'test',
-          video_length: '03:30',
-          youtube_display_name: 'tester',
-          tags: ['test1', 'test2', 'test3']
-        }
+  });
+  describe('POST /api/videos', () => {
+    const testUsers = helpers.makeUsersArray()
+    beforeEach('insert users', () => {
+      helpers.seedUsers(db, testUsers)
+    })
+    it('creates a video, responding with 201 and the new video', () => {
+      const newVideo = {
+        title: 'test',
+        video_length: '03:30',
+        youtube_display_name: 'tester',
+        tags: ['test1', 'test2', 'test3']
+      }
+      return supertest(app)
+        .post('/api/videos')
+        .send(newVideo)
+        .expect(201)
+        .expect(res => {
+          expect(res.body.title).to.eql(newVideo.title)
+          expect(res.body.video_length).to.eql(newVideo.video_length)
+          expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name)
+          expect(res.body.tags).to.eql(newVideo.tags)
+          expect(res.body).to.have.property('id')
+        })
+    })
+    
+    const requiredFields = ['title', 'video_length', 'youtube_display_name', 'tags']
+
+    requiredFields.forEach(field => {
+      const newVideo = {
+        title: 'Test video',
+        video_length: '03:30',
+        youtube_display_name: 'elan',
+        tags: ['test1', 'test2', 'test3']
+      }
+
+      it(`responds with 400 and an error message when the '${field}' is missing`, () => {
+        delete newVideo[field]
+
         return supertest(app)
           .post('/api/videos')
           .send(newVideo)
-          .expect(201)
-          .expect(res => {
-            expect(res.body.title).to.eql(newVideo.title)
-            expect(res.body.video_length).to.eql(newVideo.video_length)
-            expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name)
-            expect(res.body.tags).to.eql(newVideo.tags)
-            expect(res.body).to.have.property('id')
+          .expect(500, {
+            message: `"${field}" is required`
           })
       })
-      
-      const requiredFields = ['title', 'video_length', 'youtube_display_name', 'tags']
+    })
+  })
+  describe(`GET /api/videos/:video_id`, () => {
+    context('Given there are videos in the database', () => {
+      const testUsers = helpers.makeUsersArray()
+      const testVideos = helpers.makeVideosArray(testUsers)
 
-      requiredFields.forEach(field => {
-        const newVideo = {
-          title: 'Test video',
-          video_length: '03:30',
-          youtube_display_name: 'elan',
-          tags: ['test1', 'test2', 'test3']
+      beforeEach('insert videos', () => 
+        helpers.seedTables(
+          db,
+          testUsers,
+          testVideos
+        )
+      )
+
+      it('responds with 200 and the specified video', () => {
+        const videoId = 1
+        const expectedVideo = testVideos[videoId - 1]
+        return supertest(app)
+          .get(`/api/videos/${videoId}`)
+          .expect(200, expectedVideo)
+      })
+      it('responds with 404 and an error when the video does not exist', () => {
+        const videoId = 12394
+        return supertest(app)
+          .get(`/api/videos/${videoId}`)
+          .expect(404, {
+            error: { message: `Video doesn't exist` }
+          })
+      })
+    })
+  })
+
+  describe(`PATCH /api/videos/:video_id`, () => {
+    context('Given there are videos in the database', () => {
+      const testUsers = helpers.makeUsersArray()
+      const testVideos = helpers.makeVideosArray(testUsers)
+
+      beforeEach('insert videos', () => 
+        helpers.seedTables(
+          db,
+          testUsers,
+          testVideos
+        )
+      )
+
+      it('responds with 204 and updates the article', () => {
+        const idToUpdate = 1
+        const updatedVideo = {
+          title: 'New test title'
         }
+        const expectedVideo = {
+          ...testVideos[idToUpdate - 1],
+          ...updatedVideo
+        }
+        return supertest(app)
+          .patch(`/api/videos/${idToUpdate}`)
+          .send(updatedVideo)
+          .expect(204)
+          .then(res => 
+            supertest(app)
+            .get(`/api/videos/${idToUpdate}`)
+            .expect(expectedVideo))
+      })
 
-        it(`responds with 400 and an error message with the '${field}' is missing`, () => {
-          delete newVideo[field]
-
-          return supertest(app)
-            .post('/api/videos')
-            .send(newVideo)
-            .expect(400, {
-              error: { message: `Missing '${field}' in request body` }
-            })
-        })
+      it(`responds with 400 when no required fields are supplied`, () => {
+        const idToUpdate = 1
+        return supertest(app)
+          .patch(`/api/videos/${idToUpdate}`)
+          .send({ irrelevantField: 'foobar' })
+          .expect(400, {
+            error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
+          })
       })
     })
-    describe(`GET /api/videos/:video_id`, () => {
-      context('Given there are videos in the database', () => {
-        const testUsers = helpers.makeUsersArray()
-        const testVideos = helpers.makeVideosArray(testUsers)
-
-        beforeEach('insert videos', () => 
-          helpers.seedTables(
-            db,
-            testUsers,
-            testVideos
-          )
-        )
-
-        it('responds with 200 and the specified video', () => {
-          const videoId = 1
-          const expectedVideo = testVideos[videoId - 1]
-          return supertest(app)
-            .get(`/api/videos/${videoId}`)
-            .expect(200, expectedVideo)
-        })
-        it('responds with 404 and an error when the video does not exist', () => {
-          const videoId = 12394
-          return supertest(app)
-            .get(`/api/videos/${videoId}`)
-            .expect(404, {
-              error: { message: `Video doesn't exist` }
-            })
-        })
-      })
-    })
-
-    describe(`PATCH /api/videos/:video_id`, () => {
-      context('Given there are videos in the database', () => {
-        const testUsers = helpers.makeUsersArray()
-        const testVideos = helpers.makeVideosArray(testUsers)
-
-        beforeEach('insert videos', () => 
-          helpers.seedTables(
-            db,
-            testUsers,
-            testVideos
-          )
-        )
-
-        it('responds with 204 and updates the article', () => {
-          const idToUpdate = 1
-          const updatedVideo = {
-            title: 'New test title'
-          }
-          const expectedVideo = {
-            ...testVideos[idToUpdate - 1],
-            ...updatedVideo
-          }
-          return supertest(app)
-            .patch(`/api/videos/${idToUpdate}`)
-            .send(updatedVideo)
-            .expect(204)
-            .then(res => 
-              supertest(app)
-              .get(`/api/videos/${idToUpdate}`)
-              .expect(expectedVideo))
-        })
-
-        it(`responds with 400 when no required fields are supplied`, () => {
-          const idToUpdate = 1
-          return supertest(app)
-            .patch(`/api/videos/${idToUpdate}`)
-            .send({ irrelevantField: 'foobar' })
-            .expect(400, {
-              error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
-            })
-        })
-      })
-    })
-  });
+  })
 });
