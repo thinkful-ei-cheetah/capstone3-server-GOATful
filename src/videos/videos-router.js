@@ -10,7 +10,7 @@ videosRouter
     const user_id = 1;
     try {
       const videos = await VideoService.list(req.app.get('db'), user_id);
-      return res.json({videos});
+      return res.json(videos);
     } catch(err) {
       next({status: 500, message: err.message});
     }
