@@ -2,7 +2,7 @@
 
 Laconic enables Youtube creators to optimize their videos click rates by allowing them to rapidly test how their video appears on Youtube's search result page.  A creator can easily test out multiple custom thumbnails, titles, descriptions and more while seeing how the results render in desktop, iphone or android app.
 
-This is the backend for `Laconic`.  A live version of the app can be found at [paendabear.laconic.now.sh](https://paendabear.laconic.now.sh)
+This is the backend for `Laconic`.  A live version of the app can be found at [https://laconic.now.sh/](https://laconic.now.sh/)
 
 The code for the front end client can be found at [https://github.com/thinkful-ei-cheetah/capstone3-client-GOATful](https://github.com/thinkful-ei-cheetah/capstone3-client-GOATful).
  
