@@ -2,7 +2,21 @@
 
 const VideoService = {
   list(knex, user_id) {
-    return knex('videos').where({user_id}).select('*');
+    return knex('videos')
+      .where({user_id})
+      .select('*');
+  },
+  insertVideo(knex, video) {
+    return knex
+      .insert(video)
+      .into('videos')
+      .returning('*')
+      .then(rows => rows[0])
+  },
+  updateVideo(knex, id, newVideo) {
+    return knex('videos')
+      .where({ id })
+      .update(newVideo)
   }
 };
 
