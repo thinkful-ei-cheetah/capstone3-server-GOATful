@@ -16,10 +16,8 @@ const serializeVideo = video => ({
   video_length: xss(video.video_length),
   youtube_display_name: xss(video.youtube_display_name),
   youtube_url: video.youtube_url,
-  tags: xss(video.tags),
-  user_id: video.user_id,
-  created_at: video.created_at,
-  updated_at: video.updated_at
+  tags: video.tags,
+  user_id: video.user_id
 })
 
 videosRouter
@@ -74,22 +72,24 @@ videosRouter
       res.json(serializeVideo(res.video))
     })
     .patch(jsonParser, async (req, res, next) => {
-    const { title, video_length, youtube_display_name, tags } = req.body
-    const user_id = 1
-    const videoToUpdate = { title, video_length, youtube_display_name, tags, user_id }
-
-    const numberOfValues = Object.values(videoToUpdate).filter(Boolean).length
-    if (numberOfValues === 0) 
-      return res.status(400).json({
-        error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
-      })
-    try {
-      await VideoService.updateVideo(req.app.get('db'), req.params.id, videoToUpdate)
-      return res.status(204).end()
-    } catch(err) {
-      next({ status: 500, message: err.message })
-    }
-
+      const { title, video_length, youtube_display_name, tags } = req.body
+      const user_id = 1
+      const videoToUpdate = { title, video_length, youtube_display_name, tags, user_id }
+      
+      const requiredFields = [ 'title', 'video_length', 'youtube_display_name', 'tags', 'user_id' ]
+      let allowed = new Set(requiredFields)
+      let supplied = Object.keys(req.body)
+      let validated = supplied.filter(x => allowed.has(x))
+      if (validated.length < 1) 
+        return res.status(400).json({
+          error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
+        })
+      try {
+        await VideoService.updateVideo(req.app.get('db'), req.params.video_id, videoToUpdate)
+        return res.status(204).end()
+      } catch(err) {
+        next({ status: 500, message: err.message })
+      }
   })
 
 module.exports = videosRouter;
