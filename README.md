@@ -36,7 +36,7 @@ Major dependencies for this repo include Postgres and Node.
 To get setup locally, do the following:
 
 1. Clone this repository to your machine, `cd` into the directory and run `npm install`
-2. Create the dev and test databases: `createdb -U postgres -d laconic-dev` and `createdb -U postgres -d laconic-test`
+2. Create the dev and test databases: `createdb -U postgres laconic-dev` and `createdb -U postgres laconic-test`
 
 3. Create a `.env` and a `.env.test` file in the project root
 
@@ -52,13 +52,11 @@ MIGRATION_DB_NAME=laconic-dev
 MIGRATION_DB_USER=postgres
 DEV_DB_URL="postgresql://postgres@localhost/laconic-dev"
 
-JWT_SECRET=laconic-jwt-secret>
+JWT_SECRET=laconic-jwt-secret
 JWT_EXPIRY='1w'
 ````
 
-Your `.env.test` will be the same except your database url will be called `TEST_DB_URL`
-
-Update it to look like: `TEST_DB_URL="postgresql://postgres@localhost/laconic-test"`
+Your `.env.test` will be the same except your database name will be `MIGRATION_DB_NAME=laconic-test` and database url will be called `TEST_DB_URL="postgresql://postgres@localhost/laconic-test"`
 
 4. Run the migrations for dev - `npm run migrate`
 5. Run the migrations for test - `NODE_ENV=test npm run migrate`
