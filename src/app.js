@@ -10,6 +10,8 @@ const app = express();
 const morganOption = (NODE_ENV === 'production') ? 'tiny' : 'common';
 
 const videosRouter = require('./videos/videos-router');
+const publicUsersRouter = require('./public-user/public-users-router');
+const authRouter = require('./auth/auth-router');
 
 app.use(morgan(morganOption));
 app.use(helmet());
@@ -30,7 +32,9 @@ app.use(cors({
   }
 }));
 
+app.use('/api/auth', authRouter);
 app.use('/api/videos', videosRouter);
+app.use('/api/public-user', publicUsersRouter);
 
 app.use(errorHandler);
 

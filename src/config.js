@@ -13,5 +13,7 @@ const setDatabaseUrl = (env) => {
 module.exports = {
   PORT: process.env.PORT || 8000,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  DB_URL: setDatabaseUrl(process.env.NODE_ENV)
+  DB_URL: setDatabaseUrl(process.env.NODE_ENV),
+  JWT_SECRET: process.env.JWT_SECRET || 'some-secret-value',
+  JWT_EXPIRY: process.env.JWT_EXPIRY || '1w',
 };
