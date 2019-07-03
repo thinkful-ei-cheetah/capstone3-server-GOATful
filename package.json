@@ -7,10 +7,10 @@
     "node": "11.14.0"
   },
   "scripts": {
-    "test": "NODE_ENV=test mocha --require test/setup.js --recursive",
+    "test": "mocha --require test/setup.js --recursive",
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "predeploy": "npm audit && NODE_ENV=production npm run migrate",
+    "predeploy": "npm audit && npm run migrate",
     "deploy": "git push heroku master",
     "migrate": "postgrator --config postgrator-config.js"
   },
