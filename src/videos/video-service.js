@@ -6,6 +6,11 @@ const VideoService = {
       .where({user_id})
       .select('*');
   },
+  getVideoById(knex, id) {
+    return knex('videos')
+      .where({ id })
+      .select('*')
+  },
   insertVideo(knex, video) {
     return knex
       .insert(video)

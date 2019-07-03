@@ -55,7 +55,25 @@ videosRouter
       next({ status: 500, message: err.message })
     }
   })
-  .patch(jsonParser, async (req, res, next) => {
+
+  videosRouter
+    .route('/:video_id')
+    .all(async (req, res, next) => {
+      try {
+        const video = await VideoService.getVideoById(req.app.get('db'), req.params.video_id)
+        if (video.length < 1) {
+          return res.status(404).json({ error: { message: `Video doesn't exist` } })
+        }
+        res.video = video[0]
+        next()
+      } catch(err) {
+        next({ status: 500, message: err.message })
+      }
+    })
+    .get((req, res, next) => {
+      res.json(serializeVideo(res.video))
+    })
+    .patch(jsonParser, async (req, res, next) => {
     const { title, video_length, youtube_display_name, tags } = req.body
     const user_id = 1
     const videoToUpdate = { title, video_length, youtube_display_name, tags, user_id }
@@ -65,9 +83,8 @@ videosRouter
       return res.status(400).json({
         error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
       })
-    const videoId = 3
     try {
-      await VideoService.updateVideo(req.app.get('db'), videoId, videoToUpdate)
+      await VideoService.updateVideo(req.app.get('db'), req.params.id, videoToUpdate)
       return res.status(204).end()
     } catch(err) {
       next({ status: 500, message: err.message })

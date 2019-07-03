@@ -57,5 +57,30 @@ describe('Videos Endpoints', function() {
           });
       });
     });
+    describe('POST /api/videos', () => {
+      const testUsers = makeUsersArray()
+      beforeEach('insert users', () => {
+        helpers.seedUsers(db, testUsers)
+      })
+      it('creates a video, responding with 201 and the new video', () => {
+        const newVideo = {
+          title: 'test',
+          video_length: '03:30',
+          youtube_display_name: 'tester',
+          tags: ['test1', 'test2', 'test3']
+        }
+        return supertest(app)
+          .post('/api/videos')
+          .send(newVideo)
+          .expect(201)
+          .expect(res => {
+            expect(res.body.title).to.eql(newVideo.title)
+            expect(res.body.video_length).to.eql(newVideo.video_length)
+            expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name)
+            expect(res.body.tags).to.eql(newVideo.tags)
+            expect(res.body).to.have.property('id')
+          })
+      })
+    })
   });
 });
