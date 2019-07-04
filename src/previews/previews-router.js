@@ -9,48 +9,65 @@ previewRouter
   .route('/')
   .get(async (req, res, next) => {
     const { video_id } = req.params;
-    console.log('here')
 
     //if no videoId, reject request
     if(!video_id){
       return res.status(400).json({message: 'No video ID received'})
     }
 
-    //grab all previews from db with matching video_id
+    const db = req.app.get('db')
+    //grab all previews from db with matching video_id as well as the video
     try{
-      const previewsArray = await PreviewService.getPreviews(req.app.get('db'), video_id)
-      if (!previewsArray){
-        return res.status(200).json([])
+      const [selectedVideo] = await VideoService.getVideoById(db, video_id)
+      const previewsArray = await PreviewService.getPreviews(db, video_id)
+
+      if (!selectedVideo){
+        return res.status(400).json({message: 'No video found matching selected query'})
       }
-      return res.status(200).json(previewsArray)
+      if (!previewsArray){
+        return res.status(200).json({video: selectedVideo, previews: []})
+      }
+      return res.status(200).json({video: selectedVideo, previews: previewsArray})
     } catch (e){
       next({status: 500, message: err.message});
     }
   })
   .post(express.json(), async (req, res, next) => {
-    const newPreview = generateReceivedPreview(req)
-
+    const newPreview = generateReceivedPreview(req, 'post')
+    
     // ensure all fields are present
     for(let key in newPreview){
       if(!newPreview[key]){
-        return res.status(400).json({nessage: `missing data for field: ${key}`})
+        return res.status(400).json({message: `missing data for field: ${key}`})
       }
     }
+    
     //NEED CODE FO VALIDATIONS OF FIELDS. 
     //OUTSIDE LIBRARY?
+
     try{
+      //ensure the video ID is legit amd grab the video file
       const db = req.app.get('db')
-      const insertedPreview = await PreviewService.insertPreview(req.app.get(db), newPreview);
+      const [selectedVideo] = await VideoService.getVideoById(db, newPreview.video_id)
+      console.log(selectedVideo)
+      if (!selectedVideo){
+        return res.status(400).json({message: 'Invalid video ID'})
+      }
+
+      //insert the preview then increment the video count
+      const insertedPreview = await PreviewService.insertPreview(db, newPreview);
       await VideoService.incrementVideo(db, insertedPreview.video_id)
-      return res.status(201).json(insertedPreview)
+
+      selectedVideo.preview_count = selectedVideo.preview_count + 1;
+      return res.status(201).json({video: selectedVideo, preview: [insertedPreview]})
     } catch (e){
-      next({status: 500, message: err.message});
+      next({status: 500, message: e.message});
     }
   })
   .patch(express.json, async (req, res, next) =>{
     const updatedPreview = generateReceivedPreview(req)
 
-   // ensure all fields are present
+   // ensure all fields are present need to use JOI for this
     for(let key in updatedPreview){
       if(!updatedPreview[key]){
         return res.status(400).json({message: `missing data for field: ${key}`})
@@ -68,17 +85,22 @@ previewRouter
     }
   });
 
-function generateReceivedPreview(req){
+function generateReceivedPreview(req, type){
     //destructure data from request body
     const { id, thumbnail_url, is_active, title, description, video_id } = req.body;
     //create new object with received data
-  return {
+
+  let newPreview = {
     id,
     thumbnail_url,
     is_active,
     title,
-    description
+    description,
+    video_id
   }
+
+  if (type = 'post') delete newPreview.id;
+  return newPreview
 }
 
 module.exports =  previewRouter;

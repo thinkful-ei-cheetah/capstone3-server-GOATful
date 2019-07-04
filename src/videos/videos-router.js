@@ -8,6 +8,7 @@ const Joi = require('joi')
 const videoSchema = require('./video-schema')
 const videosRouter = express.Router();
 const VideoService = require('./video-service');
+const previewsRouter = require('../previews/previews-router')
 
 const serializeVideo = video => ({
   id: video.id,
@@ -90,5 +91,7 @@ videosRouter
         next({ status: 500, message: err.message })
       }
   })
+
+  videosRouter.use('/:video_id/previews', previewsRouter)
 
 module.exports = videosRouter;

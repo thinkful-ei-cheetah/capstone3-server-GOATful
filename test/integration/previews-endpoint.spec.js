@@ -5,7 +5,7 @@ const helpers = require('../test-helpers');
 const knex = require('knex');
 require('dotenv').config();
 
-describe('Previews Endpoints', ()=> {
+describe.only('Previews Endpoints', ()=> {
   let db;
   
   const {
@@ -32,6 +32,11 @@ describe('Previews Endpoints', ()=> {
       testVideos,
       testPreviews
     ));
+    
+
+
+
+ 
 
   afterEach('cleanup', () => helpers.cleanTables(db));
 
@@ -40,64 +45,74 @@ describe('Previews Endpoints', ()=> {
     it('resolves no videos with given id', () => {
       return supertest(app)
         .get('/api/videos/100/previews')
-        .expect(200, []);
+        .expect(400, {message: 'No video found matching selected query'});
     });
     
     it('resolves a valid request and returns previews', () => {
       return supertest(app)
         .get('/api/videos/1/previews')
-        .expect(200, testPreviews);
+        .expect(200)
+        .then( res => {
+          expect(res.body.video).to.have.property('id');
+          expect(res.body.video).to.have.property('tags');
+          expect(res.body.video).to.have.property('youtube_display_name');
+          expect(res.body.previews).to.be.an('array');
+        });
     });
   });
 
   context('POST endpoint working with seeded data', () => {
-    const newPreview = 
-    it('locates a user with the right username but wrong password', () => {
+    const newPreview1 = {is_active:false, title:'yes', description: 'trr', video_id:2 };
+    it('prevents posting if missing fields(thumbnail)', () => {
       return supertest(app)
-        .post('/api/videos/1')
-        .send({user_name: 'jamster1', password: 'password1'})
-        .expect(401, {message: 'invalid username or password'});
+        .post('/api/videos/2/previews')
+        .send(newPreview1)
+        .expect(400, { message: 'missing data for field: thumbnail_url' });
     });
 
-    it('Sends a JWT Token to the authorized client', () => {
-      
-      const expectedToken = jwt.sign({'user_id': 1,}, process.env.JWT_SECRET, {
-        subject: 'jamster1',
-        algorithm: 'HS256',
-        expiresIn: process.env.JWT_EXPIRATION
-      });
+    const newPreview2 = { thumbnail_url: 'present', title:'yes', description: 'trr', video_id:2 };
+    it('prevents posting if missing fields(is_active)', () => {
+      return supertest(app)
+        .post('/api/videos/2/previews')
+        .send(newPreview2)
+        .expect(400, { message: 'missing data for field: is_active' });
+    });
 
-      const expiredToken = jwt.sign({'user_id': 1,}, process.env.JWT_SECRET, {
-        subject: 'jamster1',
-        algorithm: 'HS256',
-        expiresIn: '-1s'
-      });
+    it('Handles invalid video_id', () => {
+      const newPreview3 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:300};
+      return supertest(app)
+        .post('/api/videos/2/previews')
+        .send(newPreview3)
+        .expect(400, {message: 'Invalid video ID'});
+    });
 
-      return request(app)
-        .post('/api/auth/login')
-        .send({user_name: 'jamster1', password: 'password'})
-        .expect(200)
-        .then( res => {
-          expect(res.body).to.have.property('token');
+    it('successfully inserts good data', () => {
+      const newPreview4 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:1}
+      return supertest(app)
+        .post('/api/videos/2/previews')
+        .send(newPreview4)
+        .expect(201)
+        .then(res => {
+
+          expect(res.body).to.be.an('object');
         });
-
     });
 
-    it('handles no token', () => {
-      return request(app)
-        .post('/api/auth/refresh')
-        .set('token', 'bad')
-        .send({user_name: 'jamster1', password: 'password'})
-        .expect(401);
+    it.only('increments video preview count', () => {
+      const newPreview5 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id: 1}
+      return supertest(app)
+        .post('/api/videos/1/previews')
+        .send(newPreview5)
+        .expect(201)
+        .then(res => {
+          return supertest(app)
+            .get('/api/videos/1')
+            .then(res =>{
+              expect (res.body.preview_count).to.eql(3);
+            });
+        });
+     
     });
-
-    it('handles good token', () => {
-      return request(app)
-        .post('/api/auth/refresh')
-        .set('Authorization', 'bearer test')
-        .send({user_name: 'jamster1', password: 'password'})
-        .expect(200);
-    });  
   });
 });
 
