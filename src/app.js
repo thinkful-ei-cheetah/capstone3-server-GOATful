@@ -34,7 +34,7 @@ app.use(cors({
 
 app.use('/api/auth', authRouter);
 app.use('/api/videos', videosRouter);
-app.use('/api/public-user', publicUsersRouter);
+app.use('/api/public-users', publicUsersRouter);
 
 app.use(errorHandler);
 

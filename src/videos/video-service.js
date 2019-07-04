@@ -9,19 +9,19 @@ const VideoService = {
   getVideoById(knex, id) {
     return knex('videos')
       .where({ id })
-      .select('*')
+      .select('*');
   },
   insertVideo(knex, video) {
     return knex
       .insert(video)
       .into('videos')
       .returning('*')
-      .then(rows => rows[0])
+      .then(rows => rows[0]);
   },
   updateVideo(knex, id, newVideo) {
     return knex('videos')
       .where({ id })
-      .update(newVideo)
+      .update(newVideo);
   }
 };
 
