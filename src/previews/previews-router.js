@@ -37,7 +37,7 @@ previewRouter
     
     // ensure all fields are present
     for(let key in newPreview){
-      if(!newPreview[key]){
+      if(newPreview[key] === undefined){
         return res.status(400).json({message: `missing data for field: ${key}`})
       }
     }
@@ -68,8 +68,9 @@ previewRouter
     const updatedPreview = generateReceivedPreview(req)
 
    // ensure all fields are present need to use JOI for this
+    // ensure all fields are present
     for(let key in updatedPreview){
-      if(!updatedPreview[key]){
+      if(updatedPreview[key] === undefined){
         return res.status(400).json({message: `missing data for field: ${key}`})
       }
     }

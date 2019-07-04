@@ -32,13 +32,13 @@ describe('Previews Endpoints', ()=> {
       testVideos,
       testPreviews
     ));
+  afterEach('cleanup', () => helpers.cleanTables(db));
     
 
 
 
  
 
-  afterEach('cleanup', () => helpers.cleanTables(db));
 
   context('GET endpoint working with seeded data', () =>{
     
@@ -79,7 +79,7 @@ describe('Previews Endpoints', ()=> {
     });
 
     it('Handles invalid video_id', () => {
-      const newPreview3 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:300};
+      const newPreview3 = { is_active: false, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:300};
       return supertest(app)
         .post('/api/videos/2/previews')
         .send(newPreview3)
@@ -87,7 +87,7 @@ describe('Previews Endpoints', ()=> {
     });
 
     it('successfully inserts good data', () => {
-      const newPreview4 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:1}
+      const newPreview4 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:1};
       return supertest(app)
         .post('/api/videos/2/previews')
         .send(newPreview4)
@@ -99,7 +99,7 @@ describe('Previews Endpoints', ()=> {
     });
 
     it('increments video preview count', () => {
-      const newPreview5 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id: 1}
+      const newPreview5 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id: 1};
       return supertest(app)
         .post('/api/videos/1/previews')
         .send(newPreview5)
@@ -132,8 +132,8 @@ describe('Previews Endpoints', ()=> {
         .expect(400, { message: 'missing data for field: thumbnail_url' });
     });
 
-    const update = {id: 1, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1}
-    it.only('Properly updates', () => {
+    const update = {id: 1, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1};
+    it('Properly updates', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
         .send(update)
