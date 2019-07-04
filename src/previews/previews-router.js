@@ -49,7 +49,7 @@ previewRouter
       //ensure the video ID is legit amd grab the video file
       const db = req.app.get('db')
       const [selectedVideo] = await VideoService.getVideoById(db, newPreview.video_id)
-      console.log(selectedVideo)
+      
       if (!selectedVideo){
         return res.status(400).json({message: 'Invalid video ID'})
       }
@@ -64,7 +64,7 @@ previewRouter
       next({status: 500, message: e.message});
     }
   })
-  .patch(express.json, async (req, res, next) =>{
+  .patch(express.json(), async (req, res, next) =>{
     const updatedPreview = generateReceivedPreview(req)
 
    // ensure all fields are present need to use JOI for this
@@ -75,13 +75,18 @@ previewRouter
     }
     //cant update the id.
     const previewId = updatedPreview.id
-    delete updatedPreview.id
+    // delete updatedPreview.id
 
     try{
+      
     const returnedUpdatedPreview = await PreviewService.updatePreview(req.app.get('db'), previewId, updatedPreview);
+    
+    console.log('right below')
+    console.log(returnedUpdatedPreview);
     return res.status(201).json(returnedUpdatedPreview);
+
     } catch (e){
-      next({status: 500, message: err.message});
+      next({status: 500, message: e.message});
     }
   });
 
@@ -99,8 +104,8 @@ function generateReceivedPreview(req, type){
     video_id
   }
 
-  if (type = 'post') delete newPreview.id;
-  return newPreview
+  if (type === 'post') delete newPreview.id;
+  return newPreview 
 }
 
 module.exports =  previewRouter;

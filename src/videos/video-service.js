@@ -26,8 +26,7 @@ const VideoService = {
   incrementVideo(knex, id){
     return knex('videos')
       .where({id})
-      .increment('preview_count');
-      
+      .increment('preview_count');   
   }
 };
 

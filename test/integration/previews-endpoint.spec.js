@@ -5,7 +5,7 @@ const helpers = require('../test-helpers');
 const knex = require('knex');
 require('dotenv').config();
 
-describe.only('Previews Endpoints', ()=> {
+describe('Previews Endpoints', ()=> {
   let db;
   
   const {
@@ -98,7 +98,7 @@ describe.only('Previews Endpoints', ()=> {
         });
     });
 
-    it.only('increments video preview count', () => {
+    it('increments video preview count', () => {
       const newPreview5 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id: 1}
       return supertest(app)
         .post('/api/videos/1/previews')
@@ -112,6 +112,41 @@ describe.only('Previews Endpoints', ()=> {
             });
         });
      
+    });
+  });
+
+  context('PATCH endpoint working with seeded data', () => {
+    const newPreview1 = {id: 1, is_active:false, title:'yes', description: 'trr', video_id:2 };
+    it('prevents posting if missing fields(thumbnail)', () => {
+      return supertest(app)
+        .patch('/api/videos/1/previews')
+        .send(newPreview1)
+        .expect(400, { message: 'missing data for field: thumbnail_url' });
+    });
+   
+    const newPreview2 = {id: 1, is_active:false, description: 'trr', video_id:2 };
+    it('prevents posting if missing fields(title)', () => {
+      return supertest(app)
+        .patch('/api/videos/1/previews')
+        .send(newPreview2)
+        .expect(400, { message: 'missing data for field: thumbnail_url' });
+    });
+
+    const update = {id: 1, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1}
+    it.only('Properly updates', () => {
+      return supertest(app)
+        .patch('/api/videos/1/previews')
+        .send(update)
+        .expect(201)
+        .then(res => {
+          console.log(res.body);
+          return supertest(app)
+            .get('/api/videos/1/previews')
+            .then(res =>{
+              console.log(res.body);
+              expect (res.body.previews[1].title).to.eql('apps');
+            });
+        });
     });
   });
 });
