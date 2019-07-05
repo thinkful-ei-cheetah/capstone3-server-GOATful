@@ -46,7 +46,7 @@ describe('Protected Endpoints', function() {
       it('returns 401 "Unauthorized request" when JWT is expired', () => {
         const secret = process.env.JWT_SECRET;
         return endpoint.method(endpoint.path)
-          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '1ms'))
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '-1ms'))
           .expect(401, { message: 'Unauthorized request' });
       });
 

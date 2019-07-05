@@ -22,6 +22,11 @@ const VideoService = {
     return knex('videos')
       .where({ id })
       .update(newVideo);
+  },
+  incrementVideo(knex, id){
+    return knex('videos')
+      .where({id})
+      .increment('preview_count');   
   }
 };
 

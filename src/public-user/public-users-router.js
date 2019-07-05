@@ -33,7 +33,7 @@ publicUsersRouter
       }
 
       validPreview.value.is_active = true;
-      const savedPreview = await PreviewService.insert(req.app.get('db'), validPreview.value);
+      const savedPreview = await PreviewService.insertPreview(req.app.get('db'), validPreview.value);
       res.status(201).json(savedPreview);
     } catch(err) {
       return next({ status: 500, message: err.message });
