@@ -25,16 +25,23 @@ describe('Auth Endpoints', function() {
   describe('POST /api/auth/login', () => {
     context('Given the user does not exist', () => {
       it('creates a new user and responds with an auth token', () => {
-        const fakeGoogleResponse = {name: 'foo bar', picture: 'https://some-pic.com', email: 'foo@bar.com'};
+        const fakeGoogleResponse = {name: 'foo bar', picture: 'https://some-pic.com', email: 'fake@fake.com'};
         AuthService.verifyGoogleToken = () => fakeGoogleResponse;
-        const expectedToken = AuthService.createJwt(fakeGoogleResponse.email, {user_id: 1});
 
         return supertest(app)
           .post('/api/auth/login')
           .set('Content-Type', 'application/json')
           .send({id_token: 'foobar'})
           .expect(200)
-          .then(res => {
+          .then(async res => {
+            const user = await db('users').where({email: 'fake@fake.com'}).first('*');
+            const userPayload = {
+              user_id: user.id,
+              full_name: user.full_name,
+              email: user.email,
+              avatar: user.avatar
+            };
+            const expectedToken = AuthService.createJwt(user.email, userPayload);
             expect(res.body.authToken).to.equal(expectedToken);
           });
       });
@@ -46,14 +53,21 @@ describe('Auth Endpoints', function() {
       it('finds the user and returns an auth token', () => {
         const fakeGoogleResponse = {email: testUsers[0].email};
         AuthService.verifyGoogleToken = () => fakeGoogleResponse;
-        const expectedToken = AuthService.createJwt(fakeGoogleResponse.email, {user_id: 1});
 
         return supertest(app)
           .post('/api/auth/login')
           .set('Content-Type', 'application/json')
           .send({id_token: 'foobar'})
           .expect(200)
-          .then(res => {
+          .then(async res => {
+            const user = await db('users').where({email: testUsers[0].email}).first('*');
+            const userPayload = {
+              user_id: user.id,
+              full_name: user.full_name,
+              email: user.email,
+              avatar: user.avatar
+            };
+            const expectedToken = AuthService.createJwt(user.email, userPayload);
             expect(res.body.authToken).to.equal(expectedToken);
           });
       });

@@ -21,7 +21,12 @@ authRouter
       
       // create our internal JWT
       const sub = savedUser.email;
-      const payload = { user_id: savedUser.id };
+      const payload = { // order is important for testing!
+        user_id: savedUser.id,
+        full_name: savedUser.full_name,
+        email: savedUser.email,
+        avatar: savedUser.avatar
+      };
       const authToken = await AuthService.createJwt(sub, payload);
       return res.json({authToken});
     } catch(err) {
