@@ -41,28 +41,3 @@ publicUsersRouter
   });
 
 module.exports = publicUsersRouter;
-// request
-// {
-//   preview: {
-//      thumbnail_url,
-//      title,
-//      description
-//   },
-//   video: {
-//      title,
-//      tags,
-//      video_length,
-//      youtube_display_name
-//     }
-//   }
-// }
-
-// response
-// {
-//   video_id,
-//   preview_id,
-//   thumbnail_url,
-//   is_active,
-//   title,
-//   description
-// }
