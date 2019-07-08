@@ -6,7 +6,7 @@ const GOOGLE_TOKEN_AUTH_URL = 'https://www.googleapis.com/oauth2/v3/tokeninfo?id
 const axios = require('axios');
 
 const AuthService = {
-  findByEmail(knex, email){
+   findByEmail (knex, email){
     return knex('users').where({email}).first('*');
   },
 

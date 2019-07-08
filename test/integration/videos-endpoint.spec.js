@@ -4,6 +4,33 @@ const knex = require('knex');
 const app = require('../../src/app');
 const helpers = require('../test-helpers');
 const VideoService = require('../../src/videos/video-service');
+require('dotenv').config();
+const secret = process.env.JWT_SECRET;
+
+const badVidz = [
+  {
+    id: 1,
+    title: 'First test video!',
+    active_thumbnail_url: 'http://placehold.it/500x500',
+    preview_count: 2,
+    is_active: true,
+    video_length: '10:01',
+    youtube_display_name: 'erevrve',
+    youtube_url: 'https://www.youtube.com/watch?v=wJ0QXCTqjUs',
+    tags: ['foo', 'bar', 'baz'],
+    user_id: 2,
+  },
+  {
+    id: 2,
+    title: 'Second test video!',
+    preview_count: 0,
+    is_active: false,
+    video_length: '5:47',
+    youtube_display_name: 'testNmae',
+    tags: ['magic', 'talent'],
+    user_id: 2
+  }
+];
 
 describe('Videos Endpoints', function() {
   let db;
@@ -27,10 +54,21 @@ describe('Videos Endpoints', function() {
   afterEach('cleanup', () => helpers.cleanTables(db));
 
   describe('GET /api/videos', () => {
+    
     context('Given no videos', () => {
+      beforeEach('insert videos', () =>
+      helpers.seedTables(
+        db,
+        testUsers,
+        badVidz,
+        testPreviews
+      )
+    );
+
       it('responds with 200 and an empty list', () => {
         return supertest(app)
           .get('/api/videos')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(200, []);
       });
     });
@@ -47,6 +85,7 @@ describe('Videos Endpoints', function() {
       it('responds with 200 and array of video objects', () => {
         return supertest(app)
           .get('/api/videos')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(200)
           .then(async res => {
             const videos = await VideoService.list(db, testUsers[0].id);
@@ -61,7 +100,7 @@ describe('Videos Endpoints', function() {
   describe('POST /api/videos', () => {
     const testUsers = helpers.makeUsersArray()
     beforeEach('insert users', () => {
-      helpers.seedUsers(db, testUsers)
+      return helpers.seedUsers(db, testUsers)
     })
     afterEach('cleanup', () => helpers.cleanTables(db));
     it('creates a video, responding with 201 and the new video', () => {
@@ -73,6 +112,7 @@ describe('Videos Endpoints', function() {
       }
       return supertest(app)
         .post('/api/videos')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newVideo)
         .expect(201)
         .expect(res => {
@@ -99,8 +139,9 @@ describe('Videos Endpoints', function() {
 
         return supertest(app)
           .post('/api/videos')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .send(newVideo)
-          .expect(500, {
+          .expect(400, {
             message: `"${field}" is required`
           })
       })
@@ -125,12 +166,14 @@ describe('Videos Endpoints', function() {
         const expectedVideo = testVideos[videoId - 1]
         return supertest(app)
           .get(`/api/videos/${videoId}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(200, expectedVideo)
       })
       it('responds with 404 and an error when the video does not exist', () => {
         const videoId = 12394
         return supertest(app)
           .get(`/api/videos/${videoId}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(404, {
             error: { message: `Video doesn't exist` }
           })
@@ -162,11 +205,13 @@ describe('Videos Endpoints', function() {
         }
         return supertest(app)
           .patch(`/api/videos/${idToUpdate}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .send(updatedVideo)
           .expect(204)
           .then(res => 
             supertest(app)
             .get(`/api/videos/${idToUpdate}`)
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
             .expect(expectedVideo))
       })
 
@@ -174,6 +219,7 @@ describe('Videos Endpoints', function() {
         const idToUpdate = 1
         return supertest(app)
           .patch(`/api/videos/${idToUpdate}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .send({ irrelevantField: 'foobar' })
           .expect(400, {
             error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }

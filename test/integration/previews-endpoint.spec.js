@@ -35,11 +35,6 @@ describe('Previews Endpoints', ()=> {
       testPreviews
     ));
   afterEach('cleanup', () => helpers.cleanTables(db));
-    
-
-
-
- 
 
 
   context('GET endpoint working with seeded data', () =>{
@@ -101,8 +96,8 @@ describe('Previews Endpoints', ()=> {
         .send(newPreview4)
         .expect(201)
         .then(res => {
-
-          expect(res.body).to.be.an('object');
+          expect(res.body.preview[0].title).to.eql('yes');
+          expect(res.body.video.title).to.eql('First test video!');
         });
     });
 
@@ -116,6 +111,7 @@ describe('Previews Endpoints', ()=> {
         .then(res => {
           return supertest(app)
             .get('/api/videos/1')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
             .then(res =>{
               expect (res.body.preview_count).to.eql(3);
             });
