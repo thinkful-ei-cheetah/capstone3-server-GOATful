@@ -4,13 +4,15 @@ const previewRouter = express.Router({mergeParams: true});
 const PreviewService = require('./preview-service');
 const VideoService = require('../videos/video-service');
 const PreviewSchema = require('./preview-schema')
+const { requireAuth } = require('../middleware/jwt-auth')
 
 //need user authentication middlware before implementation this will also handle 401 if not authenticated
 previewRouter
-  .route('/')
-  .get(async (req, res, next) => {
-    const { video_id } = req.params;
-
+.route('/')
+.get(requireAuth,  async (req, res, next) => {
+  const { video_id } = req.params;
+  console.log(requireAuth)
+  
     //if no videoId, reject request
     if(!video_id){
       return res.status(400).json({message: 'No video ID received'})
@@ -33,7 +35,7 @@ previewRouter
       next({status: 500, message: err.message});
     }
   })
-  .post(express.json(), async (req, res, next) => {
+  .post(requireAuth, express.json(), async (req, res, next) => {
     const newPreview = generateReceivedPreview(req, 'post')
 
     const validPreview = PreviewSchema.validate(newPreview);
@@ -60,7 +62,7 @@ previewRouter
       next({status: 500, message: e.message});
     }
   })
-  .patch(express.json(), async (req, res, next) =>{
+  .patch(requireAuth, express.json(), async (req, res, next) =>{
     const updatedPreview = generateReceivedPreview(req)
 
    // ensure all fields are present need to use JOI for this

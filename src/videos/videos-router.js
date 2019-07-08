@@ -9,6 +9,7 @@ const videoSchema = require('./video-schema');
 const videosRouter = express.Router();
 const VideoService = require('./video-service');
 const previewsRouter = require('../previews/previews-router')
+const { requireAuth } = require('../middleware/jwt-auth')
 
 const serializeVideo = video => ({
   id: video.id,

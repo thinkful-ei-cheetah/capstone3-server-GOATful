@@ -18,7 +18,7 @@ const requireAuth = async (req, res, next) => {
     if (!user) {
       return next({status: 401, message: 'Unauthorized request'});
     }
-
+    
     req.user = user;
     next();
   } catch(err) {

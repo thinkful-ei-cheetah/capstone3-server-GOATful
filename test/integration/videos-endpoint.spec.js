@@ -63,6 +63,7 @@ describe('Videos Endpoints', function() {
     beforeEach('insert users', () => {
       helpers.seedUsers(db, testUsers)
     })
+    afterEach('cleanup', () => helpers.cleanTables(db));
     it('creates a video, responding with 201 and the new video', () => {
       const newVideo = {
         title: 'test',
@@ -117,6 +118,7 @@ describe('Videos Endpoints', function() {
           testVideos
         )
       )
+      
 
       it('responds with 200 and the specified video', () => {
         const videoId = 1
