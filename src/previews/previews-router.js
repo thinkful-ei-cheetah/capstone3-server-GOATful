@@ -10,9 +10,7 @@ const { requireAuth } = require('../middleware/jwt-auth')
 previewRouter
 .route('/')
 .get(requireAuth,  async (req, res, next) => {
-  const { video_id } = req.params;
-  console.log(requireAuth)
-  
+  const { video_id } = req.params;  
     //if no videoId, reject request
     if(!video_id){
       return res.status(400).json({message: 'No video ID received'})

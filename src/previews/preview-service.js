@@ -20,7 +20,6 @@ module.exports = {
       .then(([insertedPreview]) => this.serializePreview(insertedPreview));
   }, 
   updatePreview(knex, id, update){
-    console.log(id, update);
     return knex('previews')
       .where({ id })
       .update(update)
