@@ -67,15 +67,15 @@ describe('Previews Endpoints', ()=> {
       return supertest(app)
         .post('/api/videos/2/previews')
         .send(newPreview1)
-        .expect(400, { message: 'missing data for field: thumbnail_url' });
+        .expect(400, { message: '"thumbnail_url" is required' });
     });
 
-    const newPreview2 = { thumbnail_url: 'present', title:'yes', description: 'trr', video_id:2 };
+    const newPreview2 = { thumbnail_url: 'present', title:'yes', description: 'trr' };
     it('prevents posting if missing fields(is_active)', () => {
       return supertest(app)
         .post('/api/videos/2/previews')
         .send(newPreview2)
-        .expect(400, { message: 'missing data for field: is_active' });
+        .expect(400, { message: '"video_id" is required' });
     });
 
     it('Handles invalid video_id', () => {
@@ -115,13 +115,13 @@ describe('Previews Endpoints', ()=> {
     });
   });
 
-  context('PATCH endpoint working with seeded data', () => {
+  context.only('PATCH endpoint working with seeded data', () => {
     const newPreview1 = {id: 1, is_active:false, title:'yes', description: 'trr', video_id:2 };
     it('prevents posting if missing fields(thumbnail)', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
         .send(newPreview1)
-        .expect(400, { message: 'missing data for field: thumbnail_url' });
+        .expect(400, { message: '"thumbnail_url" is required' });
     });
    
     const newPreview2 = {id: 1, is_active:false, description: 'trr', video_id:2 };
@@ -129,7 +129,7 @@ describe('Previews Endpoints', ()=> {
       return supertest(app)
         .patch('/api/videos/1/previews')
         .send(newPreview2)
-        .expect(400, { message: 'missing data for field: thumbnail_url' });
+        .expect(400, { message: '"title" is required' });
     });
 
     const update = {id: 1, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1};
@@ -143,6 +143,7 @@ describe('Previews Endpoints', ()=> {
             .get('/api/videos/1/previews')
             .then(res =>{
               expect (res.body.previews[1].title).to.eql('apps');
+              expect (res.body.previews[1].thumbnail_url).to.eql('hello');
             });
         });
     });
