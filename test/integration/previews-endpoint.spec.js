@@ -4,6 +4,7 @@ const app = require ('../../src/app');
 const helpers = require('../test-helpers');
 const knex = require('knex');
 require('dotenv').config();
+const secret = process.env.JWT_SECRET;
 
 describe('Previews Endpoints', ()=> {
   let db;
@@ -13,6 +14,7 @@ describe('Previews Endpoints', ()=> {
     testVideos,
     testPreviews,
   } = helpers.makeFixtures();
+
 
 
   before('make knex instance', () => {
@@ -33,11 +35,6 @@ describe('Previews Endpoints', ()=> {
       testPreviews
     ));
   afterEach('cleanup', () => helpers.cleanTables(db));
-    
-
-
-
- 
 
 
   context('GET endpoint working with seeded data', () =>{
@@ -45,12 +42,14 @@ describe('Previews Endpoints', ()=> {
     it('resolves no videos with given id', () => {
       return supertest(app)
         .get('/api/videos/100/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .expect(400, {message: 'No video found matching selected query'});
     });
     
     it('resolves a valid request and returns previews', () => {
       return supertest(app)
         .get('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .expect(200)
         .then( res => {
           expect(res.body.video).to.have.property('id');
@@ -66,22 +65,25 @@ describe('Previews Endpoints', ()=> {
     it('prevents posting if missing fields(thumbnail)', () => {
       return supertest(app)
         .post('/api/videos/2/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview1)
-        .expect(400, { message: 'missing data for field: thumbnail_url' });
+        .expect(400, { message: '"thumbnail_url" is required' });
     });
 
-    const newPreview2 = { thumbnail_url: 'present', title:'yes', description: 'trr', video_id:2 };
+    const newPreview2 = { thumbnail_url: 'present', title:'yes', description: 'trr' };
     it('prevents posting if missing fields(is_active)', () => {
       return supertest(app)
         .post('/api/videos/2/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview2)
-        .expect(400, { message: 'missing data for field: is_active' });
+        .expect(400, { message: '"video_id" is required' });
     });
 
     it('Handles invalid video_id', () => {
       const newPreview3 = { is_active: false, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:300};
       return supertest(app)
         .post('/api/videos/2/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview3)
         .expect(400, {message: 'Invalid video ID'});
     });
@@ -90,11 +92,12 @@ describe('Previews Endpoints', ()=> {
       const newPreview4 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:1};
       return supertest(app)
         .post('/api/videos/2/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview4)
         .expect(201)
         .then(res => {
-
-          expect(res.body).to.be.an('object');
+          expect(res.body.preview[0].title).to.eql('yes');
+          expect(res.body.video.title).to.eql('First test video!');
         });
     });
 
@@ -102,11 +105,13 @@ describe('Previews Endpoints', ()=> {
       const newPreview5 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id: 1};
       return supertest(app)
         .post('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview5)
         .expect(201)
         .then(res => {
           return supertest(app)
             .get('/api/videos/1')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
             .then(res =>{
               expect (res.body.preview_count).to.eql(3);
             });
@@ -120,29 +125,34 @@ describe('Previews Endpoints', ()=> {
     it('prevents posting if missing fields(thumbnail)', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview1)
-        .expect(400, { message: 'missing data for field: thumbnail_url' });
+        .expect(400, { message: '"thumbnail_url" is required' });
     });
    
     const newPreview2 = {id: 1, is_active:false, description: 'trr', video_id:2 };
     it('prevents posting if missing fields(title)', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newPreview2)
-        .expect(400, { message: 'missing data for field: thumbnail_url' });
+        .expect(400, { message: '"title" is required' });
     });
 
     const update = {id: 1, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1};
     it('Properly updates', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(update)
         .expect(201)
         .then(res => {
           return supertest(app)
             .get('/api/videos/1/previews')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
             .then(res =>{
               expect (res.body.previews[1].title).to.eql('apps');
+              expect (res.body.previews[1].thumbnail_url).to.eql('hello');
             });
         });
     });

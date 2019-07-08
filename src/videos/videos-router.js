@@ -9,6 +9,7 @@ const videoSchema = require('./video-schema');
 const videosRouter = express.Router();
 const VideoService = require('./video-service');
 const previewsRouter = require('../previews/previews-router')
+const { requireAuth } = require('../middleware/jwt-auth')
 
 const serializeVideo = video => ({
   id: video.id,
@@ -25,8 +26,8 @@ const serializeVideo = video => ({
 
 videosRouter
   .route('/')
-  .get(async (req, res, next) => {
-    const user_id = 1;
+  .get(requireAuth, async (req, res, next) => {
+    const user_id = req.user.id ;
     try {
       const videos = await VideoService.list(req.app.get('db'), user_id);
       return res.status(200).json(videos);
@@ -34,14 +35,19 @@ videosRouter
       next({status: 500, message: err.message});
     }
   })
-  .post(jsonParser, async (req, res, next) => {
+  .post(requireAuth, jsonParser, async (req, res, next) => {
     const { title, video_length, youtube_display_name, tags } = req.body;
-    const user_id = 1;
+    const user_id = req.user.id ;
     let newVideo = { title, video_length, youtube_display_name, tags, user_id };
+
+    const validVideo = videoSchema.validate(newVideo);
+    if (validVideo.error) {
+      return next({status: 400, message: validVideo.error.details[0].message});
+    }
     
     try {
-      let validation = await Joi.validate(newVideo, videoSchema);
-      newVideo = validation;
+      // let validation = await Joi.validate(newVideo);
+      // newVideo = validation;
       const newVideoPost = await VideoService.insertVideo(req.app.get('db'), newVideo);
       const serializedVideo = serializeVideo(newVideoPost);
       return res
@@ -49,13 +55,13 @@ videosRouter
         .location(path.posix.join(req.originalUrl, `/${serializedVideo.id}`))
         .json(serializedVideo);
     } catch(err) {
-      next({ status: 500, message: err.details[0].message || err.message });
+      next({ status: 400, message: err.details[0].message || err.message });
     }
   });
 
 videosRouter
   .route('/:video_id')
-  .all(async (req, res, next) => {
+  .all(requireAuth, async (req, res, next) => {
     try {
       const video = await VideoService.getVideoById(req.app.get('db'), req.params.video_id);
       if (video.length < 1) {
@@ -70,9 +76,9 @@ videosRouter
   .get((req, res, next) => {
     res.json(serializeVideo(res.video));
   })
-  .patch(jsonParser, async (req, res, next) => {
+  .patch(requireAuth, jsonParser, async (req, res, next) => {
     const { title, video_length, youtube_display_name, tags } = req.body;
-    const user_id = 1;
+    const user_id = req.user.id;
     const videoToUpdate = { title, video_length, youtube_display_name, tags, user_id };
       
     const requiredFields = [ 'title', 'video_length', 'youtube_display_name', 'tags', 'user_id' ];

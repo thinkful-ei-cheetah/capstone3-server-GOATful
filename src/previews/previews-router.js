@@ -3,13 +3,16 @@ const express = require('express');
 const previewRouter = express.Router({mergeParams: true});
 const PreviewService = require('./preview-service');
 const VideoService = require('../videos/video-service');
+const PreviewSchema = require('./preview-schema')
+const { requireAuth } = require('../middleware/jwt-auth')
 
 //need user authentication middlware before implementation this will also handle 401 if not authenticated
 previewRouter
-  .route('/')
-  .get(async (req, res, next) => {
-    const { video_id } = req.params;
-
+.route('/')
+.get(requireAuth,  async (req, res, next) => {
+  const { video_id } = req.params;
+  console.log(requireAuth)
+  
     //if no videoId, reject request
     if(!video_id){
       return res.status(400).json({message: 'No video ID received'})
@@ -32,19 +35,14 @@ previewRouter
       next({status: 500, message: err.message});
     }
   })
-  .post(express.json(), async (req, res, next) => {
+  .post(requireAuth, express.json(), async (req, res, next) => {
     const newPreview = generateReceivedPreview(req, 'post')
-    
-    // ensure all fields are present
-    for(let key in newPreview){
-      if(newPreview[key] === undefined){
-        return res.status(400).json({message: `missing data for field: ${key}`})
-      }
-    }
-    
-    //NEED CODE FO VALIDATIONS OF FIELDS. 
-    //OUTSIDE LIBRARY?
 
+    const validPreview = PreviewSchema.validate(newPreview);
+      if (validPreview.error) {
+        return next({status: 400, message: validPreview.error.details[0].message});
+      }
+    
     try{
       //ensure the video ID is legit amd grab the video file
       const db = req.app.get('db')
@@ -64,26 +62,21 @@ previewRouter
       next({status: 500, message: e.message});
     }
   })
-  .patch(express.json(), async (req, res, next) =>{
+  .patch(requireAuth, express.json(), async (req, res, next) =>{
     const updatedPreview = generateReceivedPreview(req)
 
    // ensure all fields are present need to use JOI for this
     // ensure all fields are present
-    for(let key in updatedPreview){
-      if(updatedPreview[key] === undefined){
-        return res.status(400).json({message: `missing data for field: ${key}`})
-      }
+    const validPreview = PreviewSchema.validate(updatedPreview);
+    if (validPreview.error) {
+      return next({status: 400, message: validPreview.error.details[0].message});
     }
     //cant update the id.
-    const previewId = updatedPreview.id
-    // delete updatedPreview.id
+    const previewId = validPreview.value.id
+    delete updatedPreview.id
 
     try{
-      
     const returnedUpdatedPreview = await PreviewService.updatePreview(req.app.get('db'), previewId, updatedPreview);
-    
-    console.log('right below')
-    console.log(returnedUpdatedPreview);
     return res.status(201).json(returnedUpdatedPreview);
 
     } catch (e){
