@@ -42,14 +42,14 @@ describe('Previews Endpoints', ()=> {
     it('resolves no videos with given id', () => {
       return supertest(app)
         .get('/api/videos/100/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .expect(400, {message: 'No video found matching selected query'});
     });
     
     it('resolves a valid request and returns previews', () => {
       return supertest(app)
         .get('/api/videos/1/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .expect(200)
         .then( res => {
           expect(res.body.video).to.have.property('id');
@@ -65,7 +65,7 @@ describe('Previews Endpoints', ()=> {
     it('prevents posting if missing fields(thumbnail)', () => {
       return supertest(app)
         .post('/api/videos/2/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview1)
         .expect(400, { message: '"thumbnail_url" is required' });
     });
@@ -74,7 +74,7 @@ describe('Previews Endpoints', ()=> {
     it('prevents posting if missing fields(is_active)', () => {
       return supertest(app)
         .post('/api/videos/2/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview2)
         .expect(400, { message: '"video_id" is required' });
     });
@@ -83,7 +83,7 @@ describe('Previews Endpoints', ()=> {
       const newPreview3 = { is_active: false, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:300};
       return supertest(app)
         .post('/api/videos/2/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview3)
         .expect(400, {message: 'Invalid video ID'});
     });
@@ -92,7 +92,7 @@ describe('Previews Endpoints', ()=> {
       const newPreview4 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:1};
       return supertest(app)
         .post('/api/videos/2/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview4)
         .expect(201)
         .then(res => {
@@ -105,19 +105,35 @@ describe('Previews Endpoints', ()=> {
       const newPreview5 = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id: 1};
       return supertest(app)
         .post('/api/videos/1/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview5)
         .expect(201)
         .then(res => {
           return supertest(app)
             .get('/api/videos/1')
-            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
             .then(res =>{
               expect (res.body.preview_count).to.eql(3);
             });
         });
-     
     });
+
+    context('when a video has no previews', () => {
+      it('sets active_thumbnail_url to the preview\'s thumbnail_url', () => {
+        const newPreview = { is_active: true, thumbnail_url: 'present', title:'yes', description: 'trr', video_id:2};
+        return supertest(app)
+          .post('/api/videos/2/previews')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+          .send(newPreview)
+          .expect(201)
+          .then(res => {
+            expect(res.body.preview[0].title).to.eql('yes');
+            expect(res.body.video.title).to.eql(testVideos[1].title);
+            expect(res.body.video.active_thumbnail_url).to.equal(newPreview.thumbnail_url);
+          });
+      });
+    });
+    
   });
 
   context('PATCH endpoint working with seeded data', () => {
@@ -125,7 +141,7 @@ describe('Previews Endpoints', ()=> {
     it('prevents posting if missing fields(thumbnail)', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview1)
         .expect(400, { message: '"thumbnail_url" is required' });
     });
@@ -134,7 +150,7 @@ describe('Previews Endpoints', ()=> {
     it('prevents posting if missing fields(title)', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(newPreview2)
         .expect(400, { message: '"title" is required' });
     });
@@ -143,13 +159,13 @@ describe('Previews Endpoints', ()=> {
     it('Properly updates', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
-        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
         .send(update)
         .expect(201)
         .then(res => {
           return supertest(app)
             .get('/api/videos/1/previews')
-            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
             .then(res =>{
               expect (res.body.previews[1].title).to.eql('apps');
               expect (res.body.previews[1].thumbnail_url).to.eql('hello');

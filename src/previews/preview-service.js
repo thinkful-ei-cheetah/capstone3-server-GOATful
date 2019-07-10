@@ -1,5 +1,6 @@
 'use strict';
 const xss = require('xss');
+const VideoService = require('../videos/video-service');
 
 module.exports = {
   //Get all previews for matching video ID
@@ -12,12 +13,23 @@ module.exports = {
         return  previews.map(this.serializePreview);
       });
   }, 
-  insertPreview(knex, newPreview){
+  async insertPreview(knex, newPreview){
     return knex
       .insert(newPreview)
       .into('previews')
       .returning('*')
-      .then(([insertedPreview]) => this.serializePreview(insertedPreview));
+      .then(async ([insertedPreview]) => {
+        const videos = await VideoService.getVideoById(knex, insertedPreview.video_id);
+        const video = videos[0];
+        if (video.preview_count === 0) {
+          video.active_thumbnail_url = insertedPreview.thumbnail_url;
+          video.preview_count = 1;
+          await VideoService.updateVideo(knex, video.id, video);
+        } else {
+          await VideoService.incrementVideo(knex, video.id);
+        }
+        return this.serializePreview(insertedPreview);
+      });
   }, 
   updatePreview(knex, id, update){
     return knex('previews')

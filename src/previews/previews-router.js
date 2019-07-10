@@ -45,17 +45,16 @@ previewRouter
     try{
       //ensure the video ID is legit amd grab the video file
       const db = req.app.get('db');
-      const [selectedVideo] = await VideoService.getVideoById(db, newPreview.video_id);
+      let [selectedVideo] = await VideoService.getVideoById(db, newPreview.video_id);
       
       if (!selectedVideo){
         return res.status(400).json({message: 'Invalid video ID'});
       }
 
-      //insert the preview then increment the video count
+      // insert the preview (automatically increments preview_count and sets active_thumbnail_url when first preview)
       const insertedPreview = await PreviewService.insertPreview(db, newPreview);
-      await VideoService.incrementVideo(db, insertedPreview.video_id);
+      [selectedVideo] = await VideoService.getVideoById(db, insertedPreview.video_id);
 
-      selectedVideo.preview_count = selectedVideo.preview_count + 1;
       return res.status(201).json({video: selectedVideo, preview: [insertedPreview]});
     } catch (e){
       next({status: 500, message: e.message});
