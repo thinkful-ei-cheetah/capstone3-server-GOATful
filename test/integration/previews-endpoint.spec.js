@@ -173,5 +173,63 @@ describe('Previews Endpoints', ()=> {
         });
     });
   });
-});
 
+  context('Delete endpoint working', () => {
+    it('deletes the right preview', ()=>{
+      return supertest(app)
+        .delete(('/api/videos/1/previews'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .send({id: 1, video_id: 1})
+        .expect(200);  
+    });
+    it('decrements the video count', ()=>{
+      return supertest(app)
+        .get('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .then(res => {
+          expect(res.body.video.preview_count).to.eql(2);
+          return supertest(app)
+            .delete(('/api/videos/1/previews'))
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+            .send({id: 1, video_id: 1})
+            .expect(200)
+            .then( res =>{
+              return supertest(app)
+                .get('/api/videos/1/previews')
+                .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                .then(res => {
+                  expect(res.body.video.preview_count).to.eql(1);
+                });
+            });       
+        });
+    });
+    it('handles bad request (bad video_id)', ()=>{
+      return supertest(app)
+        .delete(('/api/videos/1/previews'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .send({id: 1, video_i: 1})
+        .expect(400);  
+    });
+    it('handles bad request (bad id)', ()=>{
+      return supertest(app)
+        .delete(('/api/videos/1/previews'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .send({isd: 1, video_id: 1})
+        .expect(400);  
+    });
+    it('prevents mismatch video_id with preview', ()=>{
+      return supertest(app)
+        .delete(('/api/videos/1/previews'))
+        .send({id: 1, video_id: 9})
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .expect(400);  
+    });
+    it('prevents delete if preview id not found', ()=>{
+      return supertest(app)
+        .delete(('/api/videos/1/previews'))
+        .send({id: 20, video_id: 9})
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .expect(400);  
+    });  
+  });
+});

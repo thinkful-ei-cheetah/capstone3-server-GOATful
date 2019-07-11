@@ -13,7 +13,13 @@ module.exports = {
         return  previews.map(this.serializePreview);
       });
   }, 
-  async insertPreview(knex, newPreview){
+  deletePreview(knex, id){
+    return knex
+      .delete('*')
+      .from('previews')
+      .where({id});
+  }, 
+  insertPreview(knex, newPreview){
     return knex
       .insert(newPreview)
       .into('previews')
@@ -37,6 +43,13 @@ module.exports = {
       .update(update)
       .returning('*')
       .then(([insertedPreview]) => this.serializePreview(insertedPreview));
+  },
+  getPreviewById(knex, id){
+    return knex
+    .select('*')
+    .from('previews')
+    .where({ id })
+    .then(([preview]) => preview);  
   },
   //handle xss problems
   serializePreview(preview) {
