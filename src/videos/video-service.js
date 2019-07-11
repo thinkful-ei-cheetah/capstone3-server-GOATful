@@ -27,6 +27,11 @@ const VideoService = {
     return knex('videos')
       .where({id})
       .increment('preview_count');   
+  },
+  decrementVideo(knex, id){
+    return knex('videos')
+      .where({id})
+      .decrement('preview_count');   
   }
 };
 

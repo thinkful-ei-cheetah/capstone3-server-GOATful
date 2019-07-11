@@ -80,7 +80,36 @@ previewRouter
     } catch (e){
       next({status: 500, message: e.message});
     }
+  })
+  .delete(requireAuth, express.json(), async (req, res, next) =>{
+    const { id, video_id } = req.body;
+
+    //ensure we got required fields
+    if(!id || !video_id){
+      return res.status(400).json({message: 'Missing required fields' })
+    }
+    //db connection
+    const db = req.app.get('db')
+    try{
+      //check if a preview exists with that id and attributed video_id
+      const selectedPreview = await PreviewService.getPreviewById(db, id);
+      
+      if(!selectedPreview || selectedPreview.video_id !== video_id){
+        return res.status(400).json({message: 'Invalid Request, preview does not exist' })
+      }
+      //should change this to a batch function but removes and decrements video service
+      await VideoService.decrementVideo(db, video_id)
+      console.log('here')
+      try{
+        PreviewService.deletePreview(db, id)
+        return res.status(200).json({message: 'Resource deleted'})
+      } catch(e){
+        VideoService.incrementVideo(db, video_id)
+    }} catch (e) {
+      next({status: 500, message: e.message});
+    }
   });
+
 
 function generateReceivedPreview(req, type){
   //destructure data from request body
