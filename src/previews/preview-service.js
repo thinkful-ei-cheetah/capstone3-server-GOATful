@@ -23,7 +23,6 @@ module.exports = {
     return knex('previews')
     .where({ video_id })
     .update('is_active', false)
-    .returning('*')
   }, 
   insertPreview(knex, newPreview){
     return knex
