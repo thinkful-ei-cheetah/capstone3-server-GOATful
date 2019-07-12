@@ -223,8 +223,68 @@ describe('Videos Endpoints', function() {
           .send({ irrelevantField: 'foobar' })
           .expect(400, {
             error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
+          });
+      });
+    });
+  });
+  describe('Delete endpoint working for videos', () => {
+
+    beforeEach('insert videos', () => 
+        helpers.seedTables(
+          db,
+          testUsers,
+          testVideos
+        )
+      );
+
+    it('Deletes the right video and prevents access to preview endpoint', ()=>{
+      return supertest(app)
+        .delete(('/api/videos/1'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .expect(200, {message: 'video and previews deleted'})
+        .then(res => {
+          return supertest(app)
+          .get('/api/videos/1/previews')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+          .then(res => {
+          expect(res.body).to.eql({message: "No video found matching selected query"});
           })
-      })
-    })
-  })
+        });
+    });
+    it('handles bad request (bad video_id)', ()=>{
+        return supertest(app)
+          .delete(('/api/videos/99'))
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+          .expect(404, {error:{message: 'Video doesn\'t exist'}})  
+    });
+    it('Allows a user to post after deletion', ()=>{
+
+      const newVideo = {
+        title: 'Test video',
+        video_length: '03:30',
+        youtube_display_name: 'elan',
+        tags: ['test1', 'test2', 'test3']
+      }
+
+      return supertest(app)
+        .delete(('/api/videos/1'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .expect(200)
+        .then( res => {
+          return supertest(app)
+            .post('/api/videos')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+            .send(newVideo)
+            .expect(201)
+            .expect(res => {
+              expect(res.body.title).to.eql(newVideo.title)
+              expect(res.body.video_length).to.eql(newVideo.video_length)
+              expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name)
+              expect(res.body.tags).to.eql(newVideo.tags)
+              expect(res.body).to.have.property('id')
+            }) 
+        });
+     });
+  });
 });
+

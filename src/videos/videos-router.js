@@ -8,6 +8,7 @@ const Joi = require('joi');
 const videoSchema = require('./video-schema');
 const videosRouter = express.Router();
 const VideoService = require('./video-service');
+const PreviewService = require('../previews/preview-service')
 const previewsRouter = require('../previews/previews-router')
 const { requireAuth } = require('../middleware/jwt-auth')
 
@@ -95,7 +96,30 @@ videosRouter
     } catch(err) {
       next({ status: 500, message: err.message });
     }
-  });
+  })
+  .delete(requireAuth, jsonParser, async (req, res, next) => {
+    const { video_id } = req.params;
+   
+    //confirm video exists
+    const db = req.app.get('db');
+
+    try{
+      const [video] = await VideoService.getVideoById(db, video_id);
+      if(!video){
+        return res.status(400).json({message: 'video does not exist'})
+      }
+    } catch (e){
+      next({ status: 500, message: e.message });
+      return;
+    }
+    try{
+      await PreviewService.deleteAllPreviews(db, video_id);
+      await VideoService.deleteVideo(db, video_id)
+      return res.status(200).json({message: 'video and previews deleted'})
+    } catch (e){
+      next({ status: 500, message: e.message });
+    }
+  })
 
   videosRouter.use('/:video_id/previews', previewsRouter)
 

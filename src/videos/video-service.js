@@ -23,6 +23,12 @@ const VideoService = {
       .where({ id })
       .update(newVideo);
   },
+  deleteVideo(knex, id){
+    return knex
+      .delete('*')
+      .where({id})
+      .from('videos');
+  },
   incrementVideo(knex, id){
     return knex('videos')
       .where({id})

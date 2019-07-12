@@ -51,6 +51,12 @@ module.exports = {
     .where({ id })
     .then(([preview]) => preview);  
   },
+  deleteAllPreviews(knex, video_id){
+    return knex 
+      .delete('*')
+      .from('previews')
+      .where({video_id})
+  },
   //handle xss problems
   serializePreview(preview) {
     return {
