@@ -63,18 +63,34 @@ previewRouter
   .patch(requireAuth, express.json(), async (req, res, next) =>{
     const updatedPreview = generateReceivedPreview(req);
 
-    // ensure all fields are present need to use JOI for this
-    // ensure all fields are present
+    const { changeActive } = req.body; //Boolean to determine if batch update necessary.
+
+    // ensure all fields are present and valid
     const validPreview = PreviewSchema.validate(updatedPreview);
     if (validPreview.error) {
       return next({status: 400, message: validPreview.error.details[0].message});
     }
+
     //cant update the id.
     const previewId = validPreview.value.id;
     delete updatedPreview.id;
 
+    const db = req.app.get('db')
+
+    //if changing active thumbnail, set all others to false. and update video to have right thumbnail.
+    if (changeActive){
+      try{
+        //this should be a batch request 
+        await PreviewService.setAllActivesToFalse(db, updatedPreview.video_id);
+        await VideoService.updateActiveVideo(db, updatedPreview.video_id, updatedPreview.thumbnail_url)
+      } catch (e){
+        next({status: 500, message: e.message})
+        return;
+      }
+    };
+
     try{
-      const returnedUpdatedPreview = await PreviewService.updatePreview(req.app.get('db'), previewId, updatedPreview);
+      const returnedUpdatedPreview = await PreviewService.updatePreview(db, previewId, updatedPreview);
       return res.status(201).json(returnedUpdatedPreview);
 
     } catch (e){
@@ -93,18 +109,16 @@ previewRouter
     try{
       //check if a preview exists with that id and attributed video_id
       const selectedPreview = await PreviewService.getPreviewById(db, id);
-      
       if(!selectedPreview || selectedPreview.video_id !== video_id){
         return res.status(400).json({message: 'Invalid Request, preview does not exist' })
       }
       //should change this to a batch function but removes and decrements video service
       await VideoService.decrementVideo(db, video_id)
-      console.log('here')
       try{
-        PreviewService.deletePreview(db, id)
+        await PreviewService.deletePreview(db, id)
         return res.status(200).json({message: 'Resource deleted'})
       } catch(e){
-        VideoService.incrementVideo(db, video_id)
+        await VideoService.incrementVideo(db, video_id)
     }} catch (e) {
       next({status: 500, message: e.message});
     }

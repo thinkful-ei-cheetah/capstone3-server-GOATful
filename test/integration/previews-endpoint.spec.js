@@ -155,7 +155,7 @@ describe('Previews Endpoints', ()=> {
         .expect(400, { message: '"title" is required' });
     });
 
-    const update = {id: 1, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1};
+    const update = {id: 2, is_active: true, thumbnail_url: 'hello', title:'apps', description: 'trr', video_id: 1, changeActive: true};
     it('Properly updates', () => {
       return supertest(app)
         .patch('/api/videos/1/previews')
@@ -169,6 +169,54 @@ describe('Previews Endpoints', ()=> {
             .then(res =>{
               expect (res.body.previews[1].title).to.eql('apps');
               expect (res.body.previews[1].thumbnail_url).to.eql('hello');
+            });
+        });
+    });
+    it('updates the active status only if necessary', () => {
+      return supertest(app)
+        .get('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .then(res =>{
+          expect (res.body.previews[1].id).to.eql(2);
+          expect (res.body.previews[1].is_active).to.eql(false);
+          expect (res.body.previews[0].id).to.eql(1);
+          expect (res.body.previews[0].is_active).to.eql(true);
+          return supertest(app)
+            .patch('/api/videos/1/previews')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+            .send(update)
+            .expect(201)
+            .then(res => {
+              return supertest(app)
+                .get('/api/videos/1/previews')
+                .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                .then(res =>{
+                  expect (res.body.previews[1].id).to.eql(2);
+                  expect (res.body.previews[1].is_active).to.eql(true);
+                  expect (res.body.previews[0].id).to.eql(1);
+                  expect (res.body.previews[0].is_active).to.eql(false);
+                });
+            });
+        });
+    });
+    it('updates the video to the new URL', () => {
+      return supertest(app)
+        .get('/api/videos/1/previews')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .then(res =>{
+          expect (res.body.video.active_thumbnail_url).to.eql('http://placehold.it/500x500');
+          return supertest(app)
+            .patch('/api/videos/1/previews')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+            .send(update)
+            .expect(201)
+            .then(res => {
+              return supertest(app)
+                .get('/api/videos/1/previews')
+                .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+                .then(res =>{
+                  expect (res.body.video.active_thumbnail_url).to.eql('hello');
+                });
             });
         });
     });

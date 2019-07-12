@@ -18,6 +18,12 @@ module.exports = {
       .delete('*')
       .from('previews')
       .where({id});
+  },
+  setAllActivesToFalse(knex, video_id){
+    return knex('previews')
+    .where({ video_id })
+    .update('is_active', false)
+    .returning('*')
   }, 
   insertPreview(knex, newPreview){
     return knex
@@ -63,7 +69,7 @@ module.exports = {
       id: preview.id,
       created_at: preview.created_at,
       updated_at: preview.updated_at,
-      thumbnail_url: preview.thumbnail_url,
+      thumbnail_url: xss(preview.thumbnail_url),
       video_id: preview.video_id,
       is_active: preview.is_active,
       title: xss(preview.title),

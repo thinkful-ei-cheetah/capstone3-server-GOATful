@@ -29,6 +29,11 @@ const VideoService = {
       .where({id})
       .from('videos');
   },
+  updateActiveVideo(knex, id, active_thumbnail_url){
+    return knex('videos')
+      .where({id})
+      .update({active_thumbnail_url});
+  },
   incrementVideo(knex, id){
     return knex('videos')
       .where({id})
