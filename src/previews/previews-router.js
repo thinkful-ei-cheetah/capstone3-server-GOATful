@@ -101,10 +101,10 @@ previewRouter
       await VideoService.decrementVideo(db, video_id)
       console.log('here')
       try{
-        PreviewService.deletePreview(db, id)
+        await PreviewService.deletePreview(db, id)
         return res.status(200).json({message: 'Resource deleted'})
       } catch(e){
-        VideoService.incrementVideo(db, video_id)
+        await VideoService.incrementVideo(db, video_id)
     }} catch (e) {
       next({status: 500, message: e.message});
     }
