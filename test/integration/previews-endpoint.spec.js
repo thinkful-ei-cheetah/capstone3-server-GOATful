@@ -4,7 +4,6 @@ const app = require ('../../src/app');
 const helpers = require('../test-helpers');
 const knex = require('knex');
 require('dotenv').config();
-const secret = process.env.JWT_SECRET;
 
 describe('Previews Endpoints', ()=> {
   let db;
@@ -14,8 +13,6 @@ describe('Previews Endpoints', ()=> {
     testVideos,
     testPreviews,
   } = helpers.makeFixtures();
-
-
 
   before('make knex instance', () => {
     db = knex({

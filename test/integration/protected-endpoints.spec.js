@@ -6,7 +6,13 @@ const helpers = require('../test-helpers');
 
 describe('Protected Endpoints', function() {
   let db;
-  let testUsers = helpers.makeUsersArray();
+  
+  const {
+    testUsers,
+    testVideos,
+    testPreviews,
+    testYoutubeResults
+  } = helpers.makeFixtures();
 
   before('make knex instance', () => {
     db = knex({
@@ -19,14 +25,25 @@ describe('Protected Endpoints', function() {
   after('disconnect from db', () => db.destroy());
   before('cleanup', () => helpers.cleanTables(db));
   afterEach('cleanup', () => helpers.cleanTables(db));
-
-  beforeEach('seed users', () => helpers.seedUsers(db, testUsers));
+  
+  beforeEach('seed tables', () => helpers.seedTables(db, testUsers, testVideos, testPreviews, testYoutubeResults));
+  
 
   const protectedEndpoints = [
     {
       name: 'POST /api/public-users/create-video-and-preview',
       path: '/api/public-users/create-video-and-preview',
       method: supertest(app).post
+    },
+    {
+      name: 'POST /api/videos/1/youtube-search-results',
+      path: '/api/videos/1/youtube-search-results',
+      method: supertest(app).post
+    },
+    {
+      name: 'GET /api/videos/1/youtube-search-results',
+      path: '/api/videos/1/youtube-search-results',
+      method: supertest(app).get
     },
   ];
 
@@ -50,9 +67,9 @@ describe('Protected Endpoints', function() {
           .expect(401, { message: 'Unauthorized request' });
       });
 
-      it('returns 401 "Unauthorized request" when invalid email', async () => {
+      it('returns 401 "Unauthorized request" when invalid email', () => {
         const invalidUser = testUsers[0];
-        invalidUser.email = 'fake@fake.fake';
+        invalidUser.email = 'fake@fake.fake' + Math.floor(Math.random() * 10000);
 
         return endpoint.method(endpoint.path)
           .set('Authorization', helpers.makeAuthHeader(invalidUser))
