@@ -4,7 +4,8 @@ const VideoService = {
   list(knex, user_id) {
     return knex('videos')
       .where({user_id})
-      .select('*');
+      .select('*')
+      .orderBy('updated_at', 'DESC');
   },
   getVideoById(knex, id) {
     return knex('videos')
