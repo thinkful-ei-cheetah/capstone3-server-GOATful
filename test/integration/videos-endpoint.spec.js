@@ -7,6 +7,8 @@ const VideoService = require('../../src/videos/video-service');
 require('dotenv').config();
 const secret = process.env.JWT_SECRET;
 const YoutubeSearchResultsService = require('../../src/youtube-search-results/youtube-search-result-service');
+const KnexQueryBuilder = require('knex/lib/query/builder');
+require('../../src/util/paginate-knex')(KnexQueryBuilder);
 
 const badVidz = [
   {
@@ -70,7 +72,10 @@ describe('Videos Endpoints', function() {
         return supertest(app)
           .get('/api/videos')
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
-          .expect(200, []);
+          .expect(200)
+          .then(res => {
+            expect(res.body.data).to.eql([]);
+          })
       });
     });
 
@@ -83,17 +88,40 @@ describe('Videos Endpoints', function() {
           testPreviews,
         )
       );
-      it('responds with 200 and array of video objects', () => {
+      it('Given no page number responds with data from page 1', () => {
         return supertest(app)
           .get('/api/videos')
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(200)
-          .then(async res => {
-            const videos = await VideoService.list(db, testUsers[0].id);
-            // delete videos[0].created_at;
-            // delete videos[0].updated_at;
-            expect(res.body.length).to.equal(videos.length);
-            expect(res.body[0].id).to.equal(videos[0].id);
+          .then( res => {
+            expect(res.body.total).to.eql('1')
+            expect(res.body.data.length).to.eql(1)
+            expect(res.body.data[0].title).to.eql(testVideos[0].title)
+            return
+
+          });
+      });
+      it('Given a page number it returns data from that page', () => {
+        return supertest(app)
+          .get('/api/videos?page=1')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+          .expect(200)
+          .then( res => {
+            expect(res.body.total).to.eql('1')
+            expect(res.body.data.length).to.eql(1)
+            expect(res.body.data[0].title).to.eql(testVideos[0].title)
+            return
+
+          });
+      });
+      it('Given a page number that is higher than accessible', () => {
+        return supertest(app)
+          .get('/api/videos?page=6')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+          .expect(200)
+          .then( res => {
+            expect(res.body.data).to.eql([]);
+            return
           });
       });
     });

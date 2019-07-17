@@ -28,8 +28,10 @@ videosRouter
   .route('/')
   .get(requireAuth, async (req, res, next) => {
     const user_id = req.user.id ;
+    const { page = 1 } = req.query; //default page is 1
+ 
     try {
-      const videos = await VideoService.list(req.app.get('db'), user_id);
+      const videos = await VideoService.list(req.app.get('db'), Number(page), user_id);
       return res.status(200).json(videos);
     } catch(err) {
       next({status: 500, message: err.message});
@@ -93,6 +95,8 @@ videosRouter
         // tags are being updated, delete outdated Youtube Search Results
         await YoutubeSearchResultService.delete(req.app.get('db'), video.id);
       }
+      //update the last modified time
+      videoToUpdate.updated_at = 'now';
       await VideoService.updateVideo(req.app.get('db'), req.params.video_id, videoToUpdate);
       return res.status(204).end();
     } catch(err) {
@@ -115,6 +119,7 @@ videosRouter
       return;
     }
     try{
+      //These need to be batched
       await PreviewService.deleteAllPreviews(db, video_id);
       await VideoService.deleteVideo(db, video_id);
       return res.status(200).json({message: 'video and previews deleted'});

@@ -2,6 +2,8 @@
 const app = require('./app');
 const { PORT, DB_URL, NODE_ENV } = require('./config');
 const knex = require('knex');
+const KnexQueryBuilder = require('knex/lib/query/builder');
+require('./util/paginate-knex')(KnexQueryBuilder);
 
 const db = knex({
   client: 'pg',
