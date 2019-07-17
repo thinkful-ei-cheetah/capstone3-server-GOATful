@@ -28,8 +28,8 @@ videosRouter
   .route('/')
   .get(requireAuth, async (req, res, next) => {
     const user_id = req.user.id ;
-    const { page } = req.query;
-
+    const { page = 1 } = req.query; //default page is 1
+ 
     try {
       const videos = await VideoService.list(req.app.get('db'), Number(page), user_id);
       return res.status(200).json(videos);
