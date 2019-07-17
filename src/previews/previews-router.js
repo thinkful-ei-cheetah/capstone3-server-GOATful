@@ -63,8 +63,7 @@ previewRouter
   .patch(requireAuth, express.json(), async (req, res, next) =>{
     const updatedPreview = generateReceivedPreview(req);
 
-    // ensure all fields are present need to use JOI for this
-    // ensure all fields are present
+    // ensure all fields are present and correct
     const validPreview = PreviewSchema.validate(updatedPreview);
     if (validPreview.error) {
       return next({status: 400, message: validPreview.error.details[0].message});
@@ -74,6 +73,8 @@ previewRouter
     delete updatedPreview.id;
 
     try{
+      //change the updated_at field
+      updatedPreview.updated_at = 'now';
       const returnedUpdatedPreview = await PreviewService.updatePreview(req.app.get('db'), previewId, updatedPreview);
       return res.status(201).json(returnedUpdatedPreview);
 
