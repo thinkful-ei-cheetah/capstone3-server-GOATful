@@ -34,8 +34,27 @@ describe('Previews Endpoints', ()=> {
   afterEach('cleanup', () => helpers.cleanTables(db));
 
 
+  context('GET /api/videos/:video_id/previews/active', () => {
+    it('returns title and description of the active preview', () => {
+      return supertest(app)
+        .get('/api/videos/1/previews/active')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .expect(200)
+        .then(async res => {
+          expect(res.body.title).to.equal(testPreviews[0].title);
+          expect(res.body.description).to.equal(testPreviews[0].description);
+        });
+    });
+
+    it('returns error message if NO active preview', () => {
+      return supertest(app)
+        .get('/api/videos/2/previews/active')
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+        .expect(400, {message: 'no active preview for video'});
+    });
+  });
+  
   context('GET endpoint working with seeded data', () =>{
-    
     it('resolves no videos with given id', () => {
       return supertest(app)
         .get('/api/videos/100/previews')

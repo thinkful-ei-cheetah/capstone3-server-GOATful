@@ -87,27 +87,45 @@ previewRouter
 
     //ensure we got required fields
     if(!id || !video_id){
-      return res.status(400).json({message: 'Missing required fields' })
+      return res.status(400).json({message: 'Missing required fields' });
     }
     //db connection
-    const db = req.app.get('db')
+    const db = req.app.get('db');
     try{
       //check if a preview exists with that id and attributed video_id
       const selectedPreview = await PreviewService.getPreviewById(db, id);
       
       if(!selectedPreview || selectedPreview.video_id !== video_id){
-        return res.status(400).json({message: 'Invalid Request, preview does not exist' })
+        return res.status(400).json({message: 'Invalid Request, preview does not exist' });
       }
       //should change this to a batch function but removes and decrements video service
-      await VideoService.decrementVideo(db, video_id)
-      console.log('here')
+      await VideoService.decrementVideo(db, video_id);
       try{
-        await PreviewService.deletePreview(db, id)
-        return res.status(200).json({message: 'Resource deleted'})
+        await PreviewService.deletePreview(db, id);
+        return res.status(200).json({message: 'Resource deleted'});
       } catch(e){
-        await VideoService.incrementVideo(db, video_id)
-    }} catch (e) {
+        await VideoService.incrementVideo(db, video_id);
+      }} catch (e) {
       next({status: 500, message: e.message});
+    }
+  });
+
+previewRouter
+  .route('/active')
+  .get(requireAuth,  async (req, res, next) => {
+    const { video_id } = req.params;
+    if(!video_id){
+      return res.status(400).json({message: 'No video ID received'});
+    }
+
+    try {
+      const activePreview = await PreviewService.getActivePreview(req.app.get('db'), video_id);
+      if (!activePreview) {
+        return next({status: 400, message: 'no active preview for video'});
+      }
+      res.json(activePreview);
+    } catch(err) {
+      next({status: 500, message: err.message});
     }
   });
 
