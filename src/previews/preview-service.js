@@ -19,14 +19,17 @@ module.exports = {
       .from('previews')
       .where({id});
   }, 
-  insertPreview(knex, newPreview){
+  async insertPreview(knex, newPreview){
+    const [video] = await VideoService.getVideoById(knex, newPreview.video_id);
+    if (video.preview_count === 0) {
+      newPreview.is_active = true;
+    }
     return knex
       .insert(newPreview)
       .into('previews')
       .returning('*')
       .then(async ([insertedPreview]) => {
-        const videos = await VideoService.getVideoById(knex, insertedPreview.video_id);
-        const video = videos[0];
+        const [video] = await VideoService.getVideoById(knex, insertedPreview.video_id);
         if (video.preview_count === 0) {
           video.active_thumbnail_url = insertedPreview.thumbnail_url;
           video.preview_count = 1;
@@ -46,16 +49,16 @@ module.exports = {
   },
   getPreviewById(knex, id){
     return knex
-    .select('*')
-    .from('previews')
-    .where({ id })
-    .then(([preview]) => preview);  
+      .select('*')
+      .from('previews')
+      .where({ id })
+      .then(([preview]) => preview);  
   },
   deleteAllPreviews(knex, video_id){
     return knex 
       .delete('*')
       .from('previews')
-      .where({video_id})
+      .where({video_id});
   },
   //handle xss problems
   serializePreview(preview) {
@@ -69,6 +72,12 @@ module.exports = {
       title: xss(preview.title),
       description: xss(preview.description)
     };
+  },
+
+  getActivePreview(knex, video_id) {
+    return knex('previews')
+      .where({video_id, is_active: true})
+      .first(['title', 'description']);
   }
 };
 
