@@ -1,10 +1,10 @@
 'use strict';
 
 const VideoService = {
-  list(knex, user_id) {
+  list(knex, page, user_id) {
     return knex('videos')
       .where({user_id})
-      .select('*');
+      .paginate(9, page, 'desc');
   },
   getVideoById(knex, id) {
     return knex('videos')

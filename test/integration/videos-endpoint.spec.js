@@ -6,6 +6,9 @@ const helpers = require('../test-helpers');
 const VideoService = require('../../src/videos/video-service');
 require('dotenv').config();
 const secret = process.env.JWT_SECRET;
+const YoutubeSearchResultsService = require('../../src/youtube-search-results/youtube-search-result-service');
+const KnexQueryBuilder = require('knex/lib/query/builder');
+require('../../src/util/paginate-knex')(KnexQueryBuilder);
 
 const badVidz = [
   {
@@ -57,19 +60,22 @@ describe('Videos Endpoints', function() {
     
     context('Given no videos', () => {
       beforeEach('insert videos', () =>
-      helpers.seedTables(
-        db,
-        testUsers,
-        badVidz,
-        testPreviews
-      )
-    );
+        helpers.seedTables(
+          db,
+          testUsers,
+          badVidz,
+          testPreviews
+        )
+      );
 
       it('responds with 200 and an empty list', () => {
         return supertest(app)
           .get('/api/videos')
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
-          .expect(200, []);
+          .expect(200)
+          .then(res => {
+            expect(res.body.data).to.eql([]);
+          })
       });
     });
 
@@ -82,26 +88,49 @@ describe('Videos Endpoints', function() {
           testPreviews,
         )
       );
-      it('responds with 200 and array of video objects', () => {
+      it('Given no page number responds with data from page 1', () => {
         return supertest(app)
           .get('/api/videos')
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(200)
-          .then(async res => {
-            const videos = await VideoService.list(db, testUsers[0].id);
-            // delete videos[0].created_at;
-            // delete videos[0].updated_at;
-            expect(res.body.length).to.equal(videos.length);
-            expect(res.body[0].id).to.equal(videos[0].id);
+          .then( res => {
+            expect(res.body.total).to.eql('1')
+            expect(res.body.data.length).to.eql(1)
+            expect(res.body.data[0].title).to.eql(testVideos[0].title)
+            return
+
+          });
+      });
+      it('Given a page number it returns data from that page', () => {
+        return supertest(app)
+          .get('/api/videos?page=1')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+          .expect(200)
+          .then( res => {
+            expect(res.body.total).to.eql('1')
+            expect(res.body.data.length).to.eql(1)
+            expect(res.body.data[0].title).to.eql(testVideos[0].title)
+            return
+
+          });
+      });
+      it('Given a page number that is higher than accessible', () => {
+        return supertest(app)
+          .get('/api/videos?page=6')
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+          .expect(200)
+          .then( res => {
+            expect(res.body.data).to.eql([]);
+            return
           });
       });
     });
   });
   describe('POST /api/videos', () => {
-    const testUsers = helpers.makeUsersArray()
+    const testUsers = helpers.makeUsersArray();
     beforeEach('insert users', () => {
-      return helpers.seedUsers(db, testUsers)
-    })
+      return helpers.seedUsers(db, testUsers);
+    });
     afterEach('cleanup', () => helpers.cleanTables(db));
     it('creates a video, responding with 201 and the new video', () => {
       const newVideo = {
@@ -109,22 +138,22 @@ describe('Videos Endpoints', function() {
         video_length: '03:30',
         youtube_display_name: 'tester',
         tags: ['test1', 'test2', 'test3']
-      }
+      };
       return supertest(app)
         .post('/api/videos')
         .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
         .send(newVideo)
         .expect(201)
         .expect(res => {
-          expect(res.body.title).to.eql(newVideo.title)
-          expect(res.body.video_length).to.eql(newVideo.video_length)
-          expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name)
-          expect(res.body.tags).to.eql(newVideo.tags)
-          expect(res.body).to.have.property('id')
-        })
-    })
+          expect(res.body.title).to.eql(newVideo.title);
+          expect(res.body.video_length).to.eql(newVideo.video_length);
+          expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name);
+          expect(res.body.tags).to.eql(newVideo.tags);
+          expect(res.body).to.have.property('id');
+        });
+    });
     
-    const requiredFields = ['title', 'video_length', 'youtube_display_name', 'tags']
+    const requiredFields = ['title', 'video_length', 'youtube_display_name', 'tags'];
 
     requiredFields.forEach(field => {
       const newVideo = {
@@ -132,10 +161,10 @@ describe('Videos Endpoints', function() {
         video_length: '03:30',
         youtube_display_name: 'elan',
         tags: ['test1', 'test2', 'test3']
-      }
+      };
 
       it(`responds with 400 and an error message when the '${field}' is missing`, () => {
-        delete newVideo[field]
+        delete newVideo[field];
 
         return supertest(app)
           .post('/api/videos')
@@ -143,14 +172,14 @@ describe('Videos Endpoints', function() {
           .send(newVideo)
           .expect(400, {
             message: `"${field}" is required`
-          })
-      })
-    })
-  })
-  describe(`GET /api/videos/:video_id`, () => {
+          });
+      });
+    });
+  });
+  describe('GET /api/videos/:video_id', () => {
     context('Given there are videos in the database', () => {
-      const testUsers = helpers.makeUsersArray()
-      const testVideos = helpers.makeVideosArray(testUsers)
+      const testUsers = helpers.makeUsersArray();
+      const testVideos = helpers.makeVideosArray(testUsers);
 
       beforeEach('insert videos', () => 
         helpers.seedTables(
@@ -158,33 +187,33 @@ describe('Videos Endpoints', function() {
           testUsers,
           testVideos
         )
-      )
+      );
       
 
       it('responds with 200 and the specified video', () => {
-        const videoId = 1
-        const expectedVideo = testVideos[videoId - 1]
+        const videoId = 1;
+        const expectedVideo = testVideos[videoId - 1];
         return supertest(app)
           .get(`/api/videos/${videoId}`)
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
-          .expect(200, expectedVideo)
-      })
+          .expect(200, expectedVideo);
+      });
       it('responds with 404 and an error when the video does not exist', () => {
-        const videoId = 12394
+        const videoId = 12394;
         return supertest(app)
           .get(`/api/videos/${videoId}`)
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .expect(404, {
-            error: { message: `Video doesn't exist` }
-          })
-      })
-    })
-  })
+            error: { message: 'Video doesn\'t exist' }
+          });
+      });
+    });
+  });
 
-  describe(`PATCH /api/videos/:video_id`, () => {
+  describe('PATCH /api/videos/:video_id', () => {
     context('Given there are videos in the database', () => {
-      const testUsers = helpers.makeUsersArray()
-      const testVideos = helpers.makeVideosArray(testUsers)
+      const testUsers = helpers.makeUsersArray();
+      const testVideos = helpers.makeVideosArray(testUsers);
 
       beforeEach('insert videos', () => 
         helpers.seedTables(
@@ -192,17 +221,17 @@ describe('Videos Endpoints', function() {
           testUsers,
           testVideos
         )
-      )
+      );
 
-      it('responds with 204 and updates the article', () => {
-        const idToUpdate = 1
+      it('responds with 204 and updates the video', () => {
+        const idToUpdate = 1;
         const updatedVideo = {
           title: 'New test title'
-        }
+        };
         const expectedVideo = {
           ...testVideos[idToUpdate - 1],
           ...updatedVideo
-        }
+        };
         return supertest(app)
           .patch(`/api/videos/${idToUpdate}`)
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
@@ -210,19 +239,39 @@ describe('Videos Endpoints', function() {
           .expect(204)
           .then(res => 
             supertest(app)
-            .get(`/api/videos/${idToUpdate}`)
-            .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
-            .expect(expectedVideo))
-      })
+              .get(`/api/videos/${idToUpdate}`)
+              .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+              .expect(expectedVideo));
+      });
 
-      it(`responds with 400 when no required fields are supplied`, () => {
-        const idToUpdate = 1
+      it('deletes its associated youtube search results when its tags are updated', async () => {
+        const idToUpdate = 1;
+        const updatedVideo = {
+          tags: ['crazy', 'new', 'tags']
+        };
+        
+        await YoutubeSearchResultsService.insert(db, {video_id: idToUpdate, data: helpers.fakeYoutubeSearchResults()});
+
+        return supertest(app)
+          .patch(`/api/videos/${idToUpdate}`)
+          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+          .send(updatedVideo)
+          .expect(204)
+          .then(res => 
+            supertest(app)
+              .get(`/api/videos/${idToUpdate}/youtube-search-results`)
+              .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+              .expect(200, []));
+      });
+
+      it('responds with 400 when no required fields are supplied', () => {
+        const idToUpdate = 1;
         return supertest(app)
           .patch(`/api/videos/${idToUpdate}`)
           .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
           .send({ irrelevantField: 'foobar' })
           .expect(400, {
-            error: { message: `Request body must contain either 'title', 'video_length', 'youtube_display_name', or 'tags'` }
+            error: { message: 'Request body must contain either \'title\', \'video_length\', \'youtube_display_name\', or \'tags\'' }
           });
       });
     });
@@ -230,12 +279,12 @@ describe('Videos Endpoints', function() {
   describe('Delete endpoint working for videos', () => {
 
     beforeEach('insert videos', () => 
-        helpers.seedTables(
-          db,
-          testUsers,
-          testVideos
-        )
-      );
+      helpers.seedTables(
+        db,
+        testUsers,
+        testVideos
+      )
+    );
 
     it('Deletes the right video and prevents access to preview endpoint', ()=>{
       return supertest(app)
@@ -244,18 +293,18 @@ describe('Videos Endpoints', function() {
         .expect(200, {message: 'video and previews deleted'})
         .then(res => {
           return supertest(app)
-          .get('/api/videos/1/previews')
-          .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
-          .then(res => {
-          expect(res.body).to.eql({message: "No video found matching selected query"});
-          })
+            .get('/api/videos/1/previews')
+            .set('Authorization', helpers.makeAuthHeader(testUsers[0]))
+            .then(res => {
+              expect(res.body).to.eql({message: 'No video found matching selected query'});
+            });
         });
     });
     it('handles bad request (bad video_id)', ()=>{
-        return supertest(app)
-          .delete(('/api/videos/99'))
-          .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
-          .expect(404, {error:{message: 'Video doesn\'t exist'}})  
+      return supertest(app)
+        .delete(('/api/videos/99'))
+        .set('Authorization', helpers.makeAuthHeader(testUsers[0], secret, '10000ms'))
+        .expect(404, {error:{message: 'Video doesn\'t exist'}});  
     });
     it('Allows a user to post after deletion', ()=>{
 
@@ -264,7 +313,7 @@ describe('Videos Endpoints', function() {
         video_length: '03:30',
         youtube_display_name: 'elan',
         tags: ['test1', 'test2', 'test3']
-      }
+      };
 
       return supertest(app)
         .delete(('/api/videos/1'))
@@ -277,14 +326,14 @@ describe('Videos Endpoints', function() {
             .send(newVideo)
             .expect(201)
             .expect(res => {
-              expect(res.body.title).to.eql(newVideo.title)
-              expect(res.body.video_length).to.eql(newVideo.video_length)
-              expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name)
-              expect(res.body.tags).to.eql(newVideo.tags)
-              expect(res.body).to.have.property('id')
-            }) 
+              expect(res.body.title).to.eql(newVideo.title);
+              expect(res.body.video_length).to.eql(newVideo.video_length);
+              expect(res.body.youtube_display_name).to.eql(newVideo.youtube_display_name);
+              expect(res.body.tags).to.eql(newVideo.tags);
+              expect(res.body).to.have.property('id');
+            }); 
         });
-     });
+    });
   });
 });
 

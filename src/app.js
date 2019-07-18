@@ -12,6 +12,8 @@ const morganOption = (NODE_ENV === 'production') ? 'tiny' : 'common';
 const videosRouter = require('./videos/videos-router');
 const publicUsersRouter = require('./public-user/public-users-router');
 const authRouter = require('./auth/auth-router');
+const previewsRouter = require('./previews/previews-router');
+const YoutubeSearchResultsRouter = require('./youtube-search-results/youtube-search-results-router');
 
 app.use(morgan(morganOption));
 app.use(helmet());
@@ -34,7 +36,10 @@ app.use(cors({
 
 app.use('/api/auth', authRouter);
 app.use('/api/videos', videosRouter);
+videosRouter.use('/:video_id/previews', previewsRouter);
+videosRouter.use('/:video_id/youtube-search-results', YoutubeSearchResultsRouter);
 app.use('/api/public-users', publicUsersRouter);
+
 
 app.use(errorHandler);
 
