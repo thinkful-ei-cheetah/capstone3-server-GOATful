@@ -20,4 +20,3 @@ VALUES
 ('http://dream-gym.net/wp-content/uploads/2018/07/459880391.jpg', 'Anyone Can Get Ripped', 'Tired of failing results? Not looking for another fad? Try our push-up program!', 1);
 
 COMMIT;
-
