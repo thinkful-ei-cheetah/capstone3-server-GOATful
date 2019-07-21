@@ -8,7 +8,17 @@ The code for the front end client can be found at [https://github.com/thinkful-e
  
 ## Quick App Demo
 
-put gif here
+![Imgur](https://i.imgur.com/Ljct8Of.gif)
+
+## Team
+
+Laconic was built with 💙 by the following:
+
+* Michael Verdi: [https://github.com/verdi327](https://github.com/verdi327)
+* Elan Green: [https://github.com/elang5](https://github.com/elang5)
+* Kristof-Pierre Cummings: [https://github.com/jamster10](https://github.com/jamster10)
+* Peter Pae: [https://github.com/Paendabear](https://github.com/Paendabear)
+* David Nordeen: [https://github.com/DavidNordeen](https://github.com/DavidNordeen)
 
 ## Technology
 
@@ -66,3 +76,36 @@ Your `.env.test` will be the same except your database name will be `MIGRATION_D
 
 7. Run the tests - `npm t`
 8. Start the app - `npm run dev`
+
+## API Documentation
+
+Base Url: `https://laconic-api.herokuapp.com/api`
+
+### Authentication
+
+* `POST /login` - expects id_token, returns JWT
+
+### Videos
+
+* `GET /videos` - returns all videos for a user
+* `POST /videos` - expects a user_id, returns a new video obj
+* `GET /videos/:video_id` - expects video_id, returns video obj
+* `PATCH /videos/:video_id` - expects video_id, updates a video
+* `DELETE /videos/:video_id` - expects video_id, deletes a video
+
+### Previews
+
+* `GET /videos/:video_id/previews` - returns all previews for a given video
+* `POST /videos/:video_id/previews` - creates a new preview
+* `PATCH /videos/:video_id/previews` - expects preview_id, updates a given preview
+* `DELETE /videos/:video_id/previews` - expects a preview_id, deletes a preview
+* `GET /videos/:video_id/previews/active` - returns the currently active preview for a video
+
+### YoutubeSearchResults
+
+* `GET /videos/:video_id/youtube-search-results` - returns array of YouTube search results
+* `POST /videos/:video_id/youtube-search-results` - expects an array of YouTube search results
+
+### PublicUsers
+
+* `POST /public-users/create-video-and-preview` - expects a preview and video obj, returns a newly saved preview
