@@ -4,36 +4,36 @@ const VideoService = require('../videos/video-service');
 
 module.exports = {
   //Get all previews for matching video ID
-  getPreviews(knex, video_id){
+  getPreviews(knex, video_id) {
     return knex
       .select('*')
       .from('previews')
-      .where({video_id})
+      .where({ video_id })
       .then(previews => {
-        return  previews.map(this.serializePreview);
+        return previews.map(this.serializePreview);
       });
-  }, 
-  deletePreview(knex, id){
+  },
+  deletePreview(knex, id) {
     return knex
       .delete('*')
       .from('previews')
-      .where({id});
+      .where({ id });
   },
-  setAllActivesToFalse(knex, video_id){
+  setAllActivesToFalse(knex, video_id) {
     return knex('previews')
-    .where({ video_id })
-    .update('is_active', false)
-  }, 
-  async insertPreview(knex, newPreview){
+      .where({ video_id })
+      .update('is_active', false)
+  },
+  async insertPreview(knex, newPreview) {
     const [video] = await VideoService.getVideoById(knex, newPreview.video_id);
     if (video.preview_count === 0) {
       newPreview.is_active = true;
     }
-    return knex
+    return await knex
       .insert(newPreview)
       .into('previews')
       .returning('*')
-      .then(async ([insertedPreview]) => {
+      (async ([insertedPreview]) => {
         const [video] = await VideoService.getVideoById(knex, insertedPreview.video_id);
         if (video.preview_count === 0) {
           video.active_thumbnail_url = insertedPreview.thumbnail_url;
@@ -44,26 +44,28 @@ module.exports = {
         }
         return this.serializePreview(insertedPreview);
       });
-  }, 
-  updatePreview(knex, id, update){
+
+
+  },
+  updatePreview(knex, id, update) {
     return knex('previews')
       .where({ id })
       .update(update)
       .returning('*')
       .then(([insertedPreview]) => this.serializePreview(insertedPreview));
   },
-  getPreviewById(knex, id){
+  getPreviewById(knex, id) {
     return knex
       .select('*')
       .from('previews')
       .where({ id })
-      .then(([preview]) => preview);  
+      .then(([preview]) => preview);
   },
-  deleteAllPreviews(knex, video_id){
-    return knex 
+  deleteAllPreviews(knex, video_id) {
+    return knex
       .delete('*')
       .from('previews')
-      .where({video_id});
+      .where({ video_id });
   },
   //handle xss problems
   serializePreview(preview) {
@@ -81,7 +83,7 @@ module.exports = {
 
   getActivePreview(knex, video_id) {
     return knex('previews')
-      .where({video_id, is_active: true})
+      .where({ video_id, is_active: true })
       .first(['title', 'description']);
   }
 };
